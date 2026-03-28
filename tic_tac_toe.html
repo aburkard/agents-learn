@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic Tac Toe</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    background: #0a0a0a;
+    color: #e0e0e0;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 400;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    color: #888;
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    background: #333;
+    padding: 4px;
+    border-radius: 8px;
+  }
+
+  .cell {
+    width: 110px;
+    height: 110px;
+    background: #151515;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8rem;
+    font-weight: 300;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+    border-radius: 4px;
+  }
+
+  .cell:hover:not(.taken) {
+    background: #1e1e1e;
+  }
+
+  .cell.taken {
+    cursor: default;
+  }
+
+  .cell.x { color: #7eb8da; }
+  .cell.o { color: #da7e7e; }
+
+  .cell.win {
+    background: #1a2a1a;
+  }
+  .cell.win.x { color: #a0e0ff; }
+  .cell.win.o { color: #ffa0a0; }
+
+  #status {
+    margin-top: 2rem;
+    font-size: 1.1rem;
+    height: 1.5em;
+    color: #aaa;
+    letter-spacing: 0.05em;
+  }
+
+  #restart {
+    margin-top: 1.2rem;
+    padding: 0.5rem 1.6rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid #444;
+    color: #aaa;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  #restart:hover {
+    border-color: #888;
+    color: #e0e0e0;
+  }
+</style>
+</head>
+<body>
+
+<h1>Tic Tac Toe</h1>
+<div id="board"></div>
+<div id="status">Your move</div>
+<button id="restart">New Game</button>
+
+<script>
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+const restartBtn = document.getElementById('restart');
+
+let grid, gameOver, humanTurn;
+
+function init() {
+  grid = ['', '', '', '', '', '', '', '', ''];
+  gameOver = false;
+  humanTurn = true;
+  statusEl.textContent = 'Your move';
+  render();
+}
+
+function render() {
+  boardEl.innerHTML = '';
+  const winCells = getWinCells();
+  for (let i = 0; i < 9; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    if (grid[i]) {
+      cell.textContent = grid[i];
+      cell.classList.add(grid[i].toLowerCase(), 'taken');
+    }
+    if (winCells.has(i)) cell.classList.add('win');
+    cell.addEventListener('click', () => handleClick(i));
+    boardEl.appendChild(cell);
+  }
+}
+
+function handleClick(i) {
+  if (gameOver || !humanTurn || grid[i]) return;
+  grid[i] = 'X';
+  humanTurn = false;
+  render();
+
+  if (checkWinner('X')) {
+    statusEl.textContent = 'You win!';
+    gameOver = true;
+    render();
+    return;
+  }
+  if (isFull()) {
+    statusEl.textContent = "It's a draw!";
+    gameOver = true;
+    return;
+  }
+
+  statusEl.textContent = 'AI thinking...';
+  setTimeout(aiPlay, 300);
+}
+
+function aiPlay() {
+  const move = aiMove();
+  grid[move] = 'O';
+  render();
+
+  if (checkWinner('O')) {
+    statusEl.textContent = 'AI wins!';
+    gameOver = true;
+    render();
+    return;
+  }
+  if (isFull()) {
+    statusEl.textContent = "It's a draw!";
+    gameOver = true;
+    return;
+  }
+
+  humanTurn = true;
+  statusEl.textContent = 'Your move';
+}
+
+function minimax(isMaximizing) {
+  if (checkWinner('O')) return 1;
+  if (checkWinner('X')) return -1;
+  if (isFull()) return 0;
+
+  const empty = grid.map((v, i) => v === '' ? i : -1).filter(i => i >= 0);
+  if (isMaximizing) {
+    let best = -2;
+    for (const i of empty) {
+      grid[i] = 'O';
+      best = Math.max(best, minimax(false));
+      grid[i] = '';
+    }
+    return best;
+  } else {
+    let best = 2;
+    for (const i of empty) {
+      grid[i] = 'X';
+      best = Math.min(best, minimax(true));
+      grid[i] = '';
+    }
+    return best;
+  }
+}
+
+function aiMove() {
+  const empty = grid.map((v, i) => v === '' ? i : -1).filter(i => i >= 0);
+  let bestScore = -2, bestMove = empty[0];
+  for (const i of empty) {
+    grid[i] = 'O';
+    const score = minimax(false);
+    grid[i] = '';
+    if (score > bestScore) { bestScore = score; bestMove = i; }
+  }
+  return bestMove;
+}
+
+const LINES = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+function checkWinner(token) {
+  return LINES.some(([a,b,c]) => grid[a] === token && grid[b] === token && grid[c] === token);
+}
+
+function getWinCells() {
+  const cells = new Set();
+  for (const [a,b,c] of LINES) {
+    if (grid[a] && grid[a] === grid[b] && grid[b] === grid[c]) {
+      cells.add(a); cells.add(b); cells.add(c);
+    }
+  }
+  return cells;
+}
+
+function isFull() {
+  return grid.every(c => c !== '');
+}
+
+restartBtn.addEventListener('click', init);
+init();
+</script>
+</body>
+</html>
