@@ -4,216 +4,1006 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tic Tac Toe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Caveat:wght@400;600;700&family=Noto+Serif+JP:wght@300;400;700&family=Patrick+Hand&family=Zen+Kaku+Gothic+New:wght@300;400&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* ========== BASE RESET ========== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-    background: #0a0a0a;
-    color: #e0e0e0;
-  }
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 2rem;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  overflow-x: hidden;
+  transition: background 0.6s ease, color 0.6s ease;
+}
 
-  h1 {
-    font-size: 1.4rem;
-    font-weight: 400;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    margin-bottom: 2rem;
-    color: #888;
-  }
+/* ========== CANVAS BACKGROUND ========== */
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
 
-  #board {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    background: #333;
-    padding: 4px;
-    border-radius: 8px;
-  }
+/* ========== THEME SELECTOR (top-right pills) ========== */
+#theme-selector {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 100;
+  display: flex;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 40px;
+  background: rgba(10,10,10,0.85);
+  border: 1px solid #333;
+  transition: background 0.5s, box-shadow 0.5s, border-color 0.5s;
+}
+.theme-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s, box-shadow 0.3s;
+  position: relative;
+  outline: none;
+}
+.theme-btn:hover { transform: scale(1.18); }
+.theme-btn.active { transform: scale(1.1); }
+.theme-btn[data-theme="neon"] { background: conic-gradient(from 180deg, #0ff, #f0f, #0ff); }
+.theme-btn[data-theme="sketch"] { background: conic-gradient(from 90deg, #f5f0e8, #d4c8b0, #f5f0e8); }
+.theme-btn[data-theme="zen"] { background: conic-gradient(from 45deg, #2c2a25, #6b6050, #2c2a25); }
+.theme-btn::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  background: rgba(0,0,0,0.8);
+  color: #aaa;
+}
+.theme-btn:hover::after { opacity: 1; transform: translateX(-50%) scale(1); }
 
-  .cell {
-    width: 110px;
-    height: 110px;
-    background: #151515;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.8rem;
-    font-weight: 300;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    user-select: none;
-    border-radius: 4px;
-  }
+h1 {
+  font-size: 1.4rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  color: #888;
+  transition: all 0.5s ease;
+  text-align: center;
+}
 
-  .cell:hover:not(.taken) {
-    background: #1e1e1e;
-  }
+/* ========== MODE SELECTOR ========== */
+#mode-selector {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 700px;
+}
+.mode-btn {
+  padding: 0.5rem 1rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #111;
+  border: none;
+  border-right: 1px solid #333;
+  color: #777;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.mode-btn:last-child { border-right: none; }
+.mode-btn:hover { background: #1a1a1a; color: #ccc; }
+.mode-btn.active { background: #1e1e2e; color: #e0e0e0; border-bottom: 2px solid #7eb8da; }
 
-  .cell.taken {
-    cursor: default;
-  }
+/* ========== AI SELECTOR ========== */
+#ai-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  max-width: 600px;
+  margin-bottom: 0.4rem;
+}
+.ai-btn {
+  padding: 0.35rem 0.7rem;
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  background: #151515;
+  border: 1px solid #2a2a2a;
+  color: #777;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ai-btn:hover { border-color: #555; color: #bbb; }
+.ai-btn.active { border-color: #7eb8da; color: #7eb8da; background: #111a22; }
+#ai-desc {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 1rem;
+  height: 1.2em;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+#ai-area.hidden { display: none; }
 
-  .cell.x { color: #7eb8da; }
-  .cell.o { color: #da7e7e; }
+/* ========== HELP BOX ========== */
+#help-box {
+  max-width: 500px;
+  margin-bottom: 1rem;
+  padding: 0.8rem 1.2rem;
+  background: #111;
+  border: 1px solid #282828;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: #999;
+  display: none;
+}
+#help-box.visible { display: block; }
+#help-box strong { color: #bbb; }
 
-  .cell.win {
-    background: #1a2a1a;
-  }
-  .cell.win.x { color: #a0e0ff; }
-  .cell.win.o { color: #ffa0a0; }
+/* ========== SCORE ========== */
+#score-area {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+.score-x { color: #7eb8da; }
+.score-o { color: #da7e7e; }
 
-  #status {
-    margin-top: 2rem;
-    font-size: 1.1rem;
-    height: 1.5em;
-    color: #aaa;
-    letter-spacing: 0.05em;
-  }
+/* ========== STANDARD 3x3 BOARD ========== */
+.board-3x3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  background: #333;
+  padding: 4px;
+  border-radius: 8px;
+  position: relative;
+  transition: gap 0.5s, padding 0.5s;
+}
+.cell {
+  width: 110px;
+  height: 110px;
+  background: #151515;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.8rem;
+  font-weight: 300;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.3s, border-color 0.3s;
+  user-select: none;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.cell:hover:not(.taken) { background: #1e1e1e; }
+.cell.taken { cursor: default; }
+.cell.x { color: #7eb8da; }
+.cell.o { color: #da7e7e; }
+.cell.win, .cell.win-cell { background: #1a2a1a; }
+.cell.win.x, .cell.win-cell.x { color: #a0e0ff; }
+.cell.win.o, .cell.win-cell.o { color: #ffa0a0; }
 
-  #restart {
-    margin-top: 1.2rem;
-    padding: 0.5rem 1.6rem;
-    font-family: inherit;
-    font-size: 0.85rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    background: none;
-    border: 1px solid #444;
-    color: #aaa;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
-  }
+/* Token wrapper for animations */
+.cell .token {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
 
-  #restart:hover {
-    border-color: #888;
-    color: #e0e0e0;
-  }
+/* ========== STATUS & BUTTONS ========== */
+#status {
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+  min-height: 1.5em;
+  color: #aaa;
+  letter-spacing: 0.05em;
+  text-align: center;
+  transition: all 0.5s ease;
+}
+.status-change { animation: statusPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes statusPop {
+  0% { transform: scale(0.85); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+#restart {
+  margin-top: 1rem;
+  padding: 0.5rem 1.6rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid #444;
+  color: #aaa;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+#restart:hover { border-color: #888; color: #e0e0e0; }
+
+#help-toggle {
+  margin-top: 0.6rem;
+  padding: 0.3rem 1rem;
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid #333;
+  color: #666;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+#help-toggle:hover { border-color: #666; color: #aaa; }
+
+/* ========== ANIMATIONS ========== */
+.draw-shake { animation: drawShake 0.5s ease; }
+@keyframes drawShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+/* Celebration particles */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 200;
+  animation: particleFall linear forwards;
+}
+@keyframes particleFall {
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  70% { opacity: 0.8; }
+  100% { transform: translateY(100vh) rotate(720deg) scale(0); opacity: 0; }
+}
+
+/* Theme transition */
+.theme-transitioning .board-3x3,
+.theme-transitioning .ultimate-board,
+.theme-transitioning #cube-container {
+  animation: boardTransition 0.5s ease;
+}
+@keyframes boardTransition {
+  0% { opacity: 0.6; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ==============================================================================
+   ULTIMATE TIC-TAC-TOE
+   ============================================================================== */
+.ultimate-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #222;
+  padding: 8px;
+  border-radius: 10px;
+}
+.ultimate-sub {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: #333;
+  padding: 3px;
+  border-radius: 6px;
+  position: relative;
+  transition: box-shadow 0.2s, opacity 0.2s;
+}
+.ultimate-sub.active-sub { box-shadow: 0 0 0 2px #7eb8da88; }
+.ultimate-sub.won-x, .ultimate-sub.won-o { opacity: 0.7; }
+.ultimate-sub .sub-winner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 700;
+  z-index: 2;
+  border-radius: 6px;
+  pointer-events: none;
+}
+.ultimate-sub .sub-winner-overlay.x-overlay { background: rgba(126,184,218,0.12); color: #7eb8da; }
+.ultimate-sub .sub-winner-overlay.o-overlay { background: rgba(218,126,126,0.12); color: #da7e7e; }
+.ultimate-sub .sub-winner-overlay.draw-overlay { background: rgba(150,150,150,0.1); color: #666; font-size: 1.5rem; }
+.ucell {
+  width: 36px;
+  height: 36px;
+  background: #151515;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 400;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 2px;
+  transition: background 0.1s;
+}
+.ucell:hover:not(.taken) { background: #1e1e1e; }
+.ucell.taken { cursor: default; }
+.ucell.x { color: #7eb8da; }
+.ucell.o { color: #da7e7e; }
+
+/* ==============================================================================
+   DRUNK MODE
+   ============================================================================== */
+@keyframes wobble {
+  0%   { transform: rotate(0deg) translateX(0); }
+  25%  { transform: rotate(1.5deg) translateX(3px); }
+  50%  { transform: rotate(-1deg) translateY(2px); }
+  75%  { transform: rotate(1deg) translateX(-2px); }
+  100% { transform: rotate(0deg) translateX(0); }
+}
+@keyframes cell-drift {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  33%  { transform: translate(4px, -3px) rotate(2deg); }
+  66%  { transform: translate(-3px, 2px) rotate(-1.5deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+@keyframes hiccup {
+  0%, 90%, 100% { transform: scale(1); }
+  95% { transform: scale(1.08) rotate(3deg); }
+}
+.drunk-board { animation: wobble 3s ease-in-out infinite; }
+.drunk-board .cell {
+  animation: cell-drift 4s ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s);
+}
+.drunk-hiccup { animation: hiccup 2s ease-in-out; }
+.drunk-flash { animation: drunk-flash-anim 0.4s ease-out; }
+@keyframes drunk-flash-anim {
+  0% { background: #2a1a1a; }
+  100% { background: #151515; }
+}
+
+/* ==============================================================================
+   GRAVITY MODE
+   ============================================================================== */
+@keyframes token-fall {
+  0% { transform: translateY(-200px); opacity: 0.5; }
+  70% { transform: translateY(8px); opacity: 1; }
+  85% { transform: translateY(-3px); }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.gravity-fall { animation: token-fall 0.4s ease-out; }
+.cell.gravity-target:not(.taken) { background: #1a1a22; }
+
+/* ==============================================================================
+   BATTLE MODE
+   ============================================================================== */
+.cell .hp-bar {
+  position: absolute;
+  bottom: 4px;
+  left: 10%;
+  width: 80%;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cell .hp-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.cell .hp-fill.hp-x { background: #7eb8da; }
+.cell .hp-fill.hp-o { background: #da7e7e; }
+.cell .hp-text { position: absolute; top: 4px; right: 6px; font-size: 0.55rem; color: #555; }
+@keyframes damage-shake {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-3px, 2px); }
+  40% { transform: translate(3px, -2px); }
+  60% { transform: translate(-2px, -1px); }
+  80% { transform: translate(2px, 1px); }
+}
+.cell.damage-shake { animation: damage-shake 0.3s ease-out; }
+@keyframes death-fade {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.3) rotate(45deg); }
+}
+.cell.death-anim { animation: death-fade 0.4s ease-out forwards; }
+
+/* ==============================================================================
+   3D CUBE MODE
+   ============================================================================== */
+#cube-container {
+  width: 380px;
+  height: 380px;
+  perspective: 700px;
+  cursor: grab;
+  margin-top: 0.5rem;
+}
+#cube-container:active { cursor: grabbing; }
+#cube-scene {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+.cube-face {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 180px;
+  height: 180px;
+  margin: -90px 0 0 -90px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  padding: 3px;
+  background: rgba(30,30,40,0.25);
+  border: 1px solid rgba(100,100,120,0.25);
+  backface-visibility: hidden;
+}
+.cube-cell {
+  background: rgba(25,25,35,0.8);
+  border: 1px solid rgba(100,100,120,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 2px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cube-cell:hover:not(.taken) {
+  background: rgba(60,60,90,0.8);
+  border-color: rgba(150,150,180,0.5);
+}
+.cube-cell.taken { cursor: default; }
+.cube-cell.x { color: #7eb8da; border-color: rgba(126,184,218,0.4); background: rgba(30,50,70,0.7); }
+.cube-cell.o { color: #da7e7e; border-color: rgba(218,126,126,0.4); background: rgba(70,30,30,0.7); }
+.cube-cell.win { background: rgba(40,70,40,0.8); }
+.cube-cell.win.x { color: #a0e0ff; }
+.cube-cell.win.o { color: #ffa0a0; }
+
+/* ==============================================================================
+   THEME: NEON CYBERPUNK
+   ============================================================================== */
+body.theme-neon {
+  background: #04000c;
+  color: #e0e0ff;
+  font-family: 'Orbitron', monospace;
+}
+body.theme-neon::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+  pointer-events: none;
+  z-index: 50;
+}
+.theme-neon #theme-selector {
+  background: rgba(8,0,20,0.85);
+  border: 1px solid rgba(0,255,255,0.18);
+  box-shadow: 0 0 24px rgba(0,255,255,0.08);
+}
+.theme-neon .theme-btn.active { border-color: #0ff; box-shadow: 0 0 14px rgba(0,255,255,0.6); }
+.theme-neon .theme-btn::after { background: rgba(0,20,30,0.9); color: #0ff; font-family: 'Orbitron', monospace; }
+
+.theme-neon h1 {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.35em;
+  color: #0ff;
+  text-shadow: 0 0 8px rgba(0,255,255,0.9), 0 0 30px rgba(0,255,255,0.4), 0 0 60px rgba(0,255,255,0.15);
+  animation: neonFlicker 5s infinite;
+}
+@keyframes neonFlicker {
+  0%,89%,91%,93%,95%,100% { opacity: 1; }
+  90% { opacity: 0.82; }
+  92% { opacity: 0.92; }
+  94% { opacity: 0.87; }
+}
+
+.theme-neon #mode-selector { border-color: rgba(0,255,255,0.2); }
+.theme-neon .mode-btn { background: rgba(4,0,14,0.9); color: rgba(0,255,255,0.5); border-color: rgba(0,255,255,0.1); font-family: 'Orbitron', monospace; font-size: 0.6rem; }
+.theme-neon .mode-btn:hover { color: #0ff; background: rgba(0,255,255,0.05); }
+.theme-neon .mode-btn.active { background: rgba(0,255,255,0.08); color: #0ff; border-bottom-color: #0ff; }
+
+.theme-neon .ai-btn { background: rgba(4,0,14,0.9); border-color: rgba(0,255,255,0.12); color: rgba(0,255,255,0.45); font-family: 'Orbitron', monospace; font-size: 0.58rem; }
+.theme-neon .ai-btn:hover { border-color: rgba(0,255,255,0.4); color: #0ff; }
+.theme-neon .ai-btn.active { border-color: #0ff; color: #0ff; background: rgba(0,255,255,0.06); box-shadow: 0 0 8px rgba(0,255,255,0.2); }
+.theme-neon #ai-desc { color: rgba(0,255,255,0.35); font-family: 'Orbitron', monospace; font-size: 0.6rem; }
+
+.theme-neon .board-3x3 {
+  gap: 4px; padding: 4px;
+  border: 1px solid rgba(0,255,255,0.25);
+  border-radius: 4px;
+  background: rgba(0,255,255,0.05);
+  box-shadow: 0 0 40px rgba(0,255,255,0.1), inset 0 0 40px rgba(0,255,255,0.03);
+}
+.theme-neon .cell {
+  width: 118px; height: 118px;
+  background: rgba(4,0,14,0.95);
+  border: 1px solid rgba(0,255,255,0.08);
+  border-radius: 3px;
+  font-size: 3rem; font-weight: 900;
+}
+.theme-neon .cell:hover:not(.taken) {
+  background: rgba(0,255,255,0.04);
+  border-color: rgba(0,255,255,0.25);
+  box-shadow: inset 0 0 24px rgba(0,255,255,0.06);
+}
+.theme-neon .cell:hover:not(.taken)::after {
+  content: 'X'; position: absolute; font-size: 3rem; font-weight: 900;
+  color: rgba(0,255,255,0.12); pointer-events: none;
+}
+.theme-neon .cell:active:not(.taken) { transform: scale(0.95); transition: transform 0.1s; }
+
+.theme-neon .cell .token { animation: neonAppear 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+@keyframes neonAppear {
+  0% { opacity: 0; transform: scale(0) rotate(-15deg); }
+  60% { transform: scale(1.12) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.theme-neon .cell .token.x-token { color: #0ff; text-shadow: 0 0 8px rgba(0,255,255,1), 0 0 24px rgba(0,255,255,0.6), 0 0 48px rgba(0,255,255,0.3); filter: drop-shadow(0 0 4px rgba(0,255,255,0.9)); }
+.theme-neon .cell .token.o-token { color: #f0f; text-shadow: 0 0 8px rgba(255,0,255,1), 0 0 24px rgba(255,0,255,0.6), 0 0 48px rgba(255,0,255,0.3); filter: drop-shadow(0 0 4px rgba(255,0,255,0.9)); }
+
+.theme-neon .cell.win-cell { background: rgba(0,255,255,0.06); }
+.theme-neon .cell.win-cell .token { animation: neonWinPulse 1s ease-in-out infinite alternate; }
+@keyframes neonWinPulse {
+  0% { filter: drop-shadow(0 0 4px currentColor) brightness(1); transform: scale(1); }
+  100% { filter: drop-shadow(0 0 22px currentColor) brightness(1.3); transform: scale(1.06); }
+}
+
+.theme-neon #status { font-family: 'Orbitron', monospace; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(0,255,255,0.65); }
+.theme-neon #restart {
+  font-family: 'Orbitron', monospace; font-size: 0.65rem; letter-spacing: 0.2em;
+  padding: 0.65rem 2.2rem;
+  border: 1px solid rgba(0,255,255,0.35); color: rgba(0,255,255,0.75); border-radius: 2px;
+  clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+}
+.theme-neon #restart:hover { background: rgba(0,255,255,0.06); border-color: #0ff; color: #0ff; text-shadow: 0 0 8px rgba(0,255,255,0.5); }
+.theme-neon #help-toggle { font-family: 'Orbitron', monospace; font-size: 0.55rem; border-color: rgba(0,255,255,0.15); color: rgba(0,255,255,0.4); }
+.theme-neon #help-toggle:hover { border-color: rgba(0,255,255,0.4); color: #0ff; }
+.theme-neon #help-box { background: rgba(4,0,14,0.95); border-color: rgba(0,255,255,0.15); color: rgba(0,255,255,0.5); font-family: 'Orbitron', monospace; font-size: 0.65rem; }
+.theme-neon #help-box strong { color: #0ff; }
+.theme-neon #score-area { font-family: 'Orbitron', monospace; font-size: 0.65rem; }
+.theme-neon .score-x { color: #0ff; }
+.theme-neon .score-o { color: #f0f; }
+
+/* Neon theme for special modes */
+.theme-neon .ultimate-board { background: rgba(0,255,255,0.04); border: 1px solid rgba(0,255,255,0.1); }
+.theme-neon .ultimate-sub { background: rgba(0,255,255,0.03); }
+.theme-neon .ultimate-sub.active-sub { box-shadow: 0 0 0 2px rgba(0,255,255,0.35); }
+.theme-neon .ucell { background: rgba(4,0,14,0.9); font-family: 'Orbitron', monospace; }
+.theme-neon .ucell:hover:not(.taken) { background: rgba(0,255,255,0.06); }
+.theme-neon .ucell.x { color: #0ff; }
+.theme-neon .ucell.o { color: #f0f; }
+.theme-neon .sub-winner-overlay.x-overlay { background: rgba(0,255,255,0.1); color: #0ff; }
+.theme-neon .sub-winner-overlay.o-overlay { background: rgba(255,0,255,0.1); color: #f0f; }
+
+.theme-neon .cube-face { background: rgba(4,0,14,0.2); border-color: rgba(0,255,255,0.15); }
+.theme-neon .cube-cell { background: rgba(4,0,14,0.75); border-color: rgba(0,255,255,0.12); font-family: 'Orbitron', monospace; }
+.theme-neon .cube-cell:hover:not(.taken) { background: rgba(0,255,255,0.1); border-color: rgba(0,255,255,0.4); }
+.theme-neon .cube-cell.x { color: #0ff; border-color: rgba(0,255,255,0.35); background: rgba(0,30,40,0.7); text-shadow: 0 0 8px rgba(0,255,255,0.6); }
+.theme-neon .cube-cell.o { color: #f0f; border-color: rgba(255,0,255,0.35); background: rgba(40,0,30,0.7); text-shadow: 0 0 8px rgba(255,0,255,0.6); }
+
+/* ==============================================================================
+   THEME: HAND-DRAWN SKETCH
+   ============================================================================== */
+body.theme-sketch {
+  background: #f7f2e8;
+  color: #3a3530;
+  font-family: 'Patrick Hand', cursive;
+}
+/* Ruled lines */
+body.theme-sketch::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(170,160,140,0.22) 31px, rgba(170,160,140,0.22) 32px);
+  pointer-events: none;
+  z-index: 0;
+}
+/* Red margin */
+body.theme-sketch::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 72px;
+  width: 2px;
+  height: 100%;
+  background: rgba(210,90,90,0.22);
+  pointer-events: none;
+  z-index: 0;
+}
+.theme-sketch #theme-selector {
+  background: rgba(247,242,232,0.92);
+  border: 2px solid #c4b8a4;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.08);
+}
+.theme-sketch .theme-btn.active { border-color: #6b5d4f; box-shadow: 0 0 0 2px rgba(107,93,79,0.25); }
+.theme-sketch .theme-btn::after { background: #f7f2e8; color: #6b5d4f; font-family: 'Patrick Hand', cursive; border: 1px solid #c4b8a4; }
+
+.theme-sketch h1 {
+  font-family: 'Caveat', cursive;
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #3a3530;
+  letter-spacing: 0.04em;
+  transform: rotate(-1.2deg);
+  position: relative;
+}
+.theme-sketch h1::after {
+  content: '';
+  position: absolute;
+  bottom: 0px;
+  left: 5%;
+  width: 90%;
+  height: 3px;
+  background: #3a3530;
+  border-radius: 3px;
+  opacity: 0.3;
+  transform: rotate(0.6deg) scaleX(1.02);
+}
+
+.theme-sketch #mode-selector { border-color: #c4b8a4; }
+.theme-sketch .mode-btn { background: rgba(247,242,232,0.8); color: #8a7e68; border-color: #c4b8a4; font-family: 'Patrick Hand', cursive; font-size: 0.95rem; }
+.theme-sketch .mode-btn:hover { background: rgba(200,190,170,0.2); color: #3a3530; }
+.theme-sketch .mode-btn.active { background: rgba(200,190,170,0.3); color: #3a3530; border-bottom-color: #6b5d4f; }
+
+.theme-sketch .ai-btn { background: rgba(247,242,232,0.6); border-color: #c4b8a4; color: #8a7e68; font-family: 'Patrick Hand', cursive; font-size: 0.85rem; }
+.theme-sketch .ai-btn:hover { border-color: #6b5d4f; color: #3a3530; }
+.theme-sketch .ai-btn.active { border-color: #2a6496; color: #2a6496; background: rgba(42,100,150,0.08); }
+.theme-sketch #ai-desc { color: #8a7e68; font-family: 'Patrick Hand', cursive; }
+
+.theme-sketch .board-3x3 {
+  gap: 0; padding: 0; background: transparent; position: relative;
+}
+.theme-sketch .board-3x3::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: 5;
+  pointer-events: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='336'%3E%3Cpath d='M3,0 Q5,56 2,112 Q4,168 3,224 Q1,280 3,336' stroke='%233a3530' stroke-width='2.2' fill='none' stroke-linecap='round' opacity='0.45'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='336'%3E%3Cpath d='M3,0 Q1,56 4,112 Q2,168 3,224 Q5,280 3,336' stroke='%233a3530' stroke-width='2.2' fill='none' stroke-linecap='round' opacity='0.45'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='336' height='6'%3E%3Cpath d='M0,3 Q56,1 112,4 Q168,2 224,3 Q280,5 336,3' stroke='%233a3530' stroke-width='2.2' fill='none' stroke-linecap='round' opacity='0.45'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='336' height='6'%3E%3Cpath d='M0,3 Q56,5 112,2 Q168,4 224,3 Q280,1 336,3' stroke='%233a3530' stroke-width='2.2' fill='none' stroke-linecap='round' opacity='0.45'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(33.33% - 1px) 0, calc(66.66% - 1px) 0, 0 calc(33.33% - 1px), 0 calc(66.66% - 1px);
+  background-size: 6px 100%, 6px 100%, 100% 6px, 100% 6px;
+}
+.theme-sketch .cell {
+  width: 112px; height: 112px;
+  background: transparent; border: none; border-radius: 0;
+}
+.theme-sketch .cell:hover:not(.taken) { background: rgba(100,85,65,0.05); }
+.theme-sketch .cell:hover:not(.taken)::after {
+  content: 'x'; position: absolute; font-family: 'Caveat', cursive; font-size: 2.8rem; font-weight: 700;
+  color: rgba(42,100,150,0.12); pointer-events: none;
+}
+.theme-sketch .cell:active:not(.taken) { transform: scale(0.96) rotate(-1deg); transition: transform 0.1s; }
+
+.theme-sketch .cell .token { animation: sketchDraw 0.45s ease-out forwards; }
+@keyframes sketchDraw {
+  0% { opacity: 0; transform: scale(0.4) rotate(-6deg); }
+  50% { opacity: 0.8; transform: scale(1.06) rotate(1.5deg); }
+  75% { opacity: 1; transform: scale(0.97) rotate(-0.5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.theme-sketch .cell.win-cell { background: rgba(255,215,60,0.15); }
+.theme-sketch .cell.win-cell .token { animation: sketchWinWiggle 0.8s ease-in-out infinite alternate; }
+@keyframes sketchWinWiggle {
+  0% { transform: rotate(-2deg) scale(1); }
+  100% { transform: rotate(2deg) scale(1.05); }
+}
+
+.theme-sketch #status { font-family: 'Patrick Hand', cursive; font-size: 1.35rem; color: #6b5d4f; transform: rotate(-0.4deg); }
+.theme-sketch #restart {
+  font-family: 'Patrick Hand', cursive; font-size: 1.15rem;
+  padding: 0.5rem 1.8rem;
+  background: transparent; border: 2.5px dashed #b8a890; color: #6b5d4f; border-radius: 8px;
+  transform: rotate(0.6deg);
+}
+.theme-sketch #restart:hover { border-style: solid; border-color: #6b5d4f; background: rgba(100,85,65,0.06); color: #3a3530; transform: rotate(-0.6deg) scale(1.04); }
+.theme-sketch #help-toggle { font-family: 'Patrick Hand', cursive; font-size: 0.95rem; border-color: #c4b8a4; color: #8a7e68; }
+.theme-sketch #help-box { background: rgba(247,242,232,0.95); border-color: #c4b8a4; color: #6b5d4f; font-family: 'Patrick Hand', cursive; }
+.theme-sketch #help-box strong { color: #3a3530; }
+.theme-sketch #score-area { font-family: 'Patrick Hand', cursive; font-size: 1rem; color: #8a7e68; }
+.theme-sketch .score-x { color: #2a6496; }
+.theme-sketch .score-o { color: #c0392b; }
+
+/* Sketch for special modes */
+.theme-sketch .ultimate-board { background: rgba(180,170,150,0.15); border: 2px dashed #c4b8a4; }
+.theme-sketch .ultimate-sub { background: rgba(180,170,150,0.1); }
+.theme-sketch .ultimate-sub.active-sub { box-shadow: 0 0 0 2px rgba(42,100,150,0.3); }
+.theme-sketch .ucell { background: transparent; font-family: 'Caveat', cursive; }
+.theme-sketch .ucell:hover:not(.taken) { background: rgba(100,85,65,0.08); }
+.theme-sketch .ucell.x { color: #2a6496; }
+.theme-sketch .ucell.o { color: #c0392b; }
+.theme-sketch .sub-winner-overlay.x-overlay { background: rgba(42,100,150,0.1); color: #2a6496; font-family: 'Caveat', cursive; }
+.theme-sketch .sub-winner-overlay.o-overlay { background: rgba(192,57,43,0.1); color: #c0392b; font-family: 'Caveat', cursive; }
+
+.theme-sketch .cube-face { background: rgba(247,242,232,0.15); border-color: #c4b8a4; }
+.theme-sketch .cube-cell { background: rgba(247,242,232,0.75); border-color: #c4b8a4; font-family: 'Caveat', cursive; font-size: 1.4rem; }
+.theme-sketch .cube-cell:hover:not(.taken) { background: rgba(220,210,190,0.85); border-color: #8a7e68; }
+.theme-sketch .cube-cell.x { color: #2a6496; border-color: rgba(42,100,150,0.4); background: rgba(230,240,250,0.75); }
+.theme-sketch .cube-cell.o { color: #c0392b; border-color: rgba(192,57,43,0.4); background: rgba(250,235,235,0.75); }
+
+/* ==============================================================================
+   THEME: ZEN GARDEN
+   ============================================================================== */
+body.theme-zen {
+  background: #17140f;
+  color: #c8bfa8;
+  font-family: 'Noto Serif JP', serif;
+}
+body.theme-zen::before {
+  content: '';
+  position: fixed;
+  top: 50%; left: 50%;
+  width: 900px; height: 900px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 80px, rgba(200,191,168,0.025) 81px, transparent 83px),
+    radial-gradient(circle, transparent 120px, rgba(200,191,168,0.025) 121px, transparent 123px),
+    radial-gradient(circle, transparent 160px, rgba(200,191,168,0.025) 161px, transparent 163px),
+    radial-gradient(circle, transparent 200px, rgba(200,191,168,0.025) 201px, transparent 203px),
+    radial-gradient(circle, transparent 240px, rgba(200,191,168,0.025) 241px, transparent 243px),
+    radial-gradient(circle, transparent 280px, rgba(200,191,168,0.025) 281px, transparent 283px),
+    radial-gradient(circle, transparent 320px, rgba(200,191,168,0.025) 321px, transparent 323px),
+    radial-gradient(circle, transparent 360px, rgba(200,191,168,0.025) 361px, transparent 363px),
+    radial-gradient(circle, transparent 400px, rgba(200,191,168,0.025) 401px, transparent 403px);
+  pointer-events: none;
+  z-index: 0;
+}
+body.theme-zen::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 7px, rgba(200,191,168,0.018) 7px, rgba(200,191,168,0.018) 8px);
+  pointer-events: none;
+  z-index: 0;
+}
+.theme-zen #theme-selector {
+  background: rgba(23,20,15,0.88);
+  border: 1px solid rgba(200,191,168,0.12);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+}
+.theme-zen .theme-btn.active { border-color: rgba(200,191,168,0.45); box-shadow: 0 0 10px rgba(200,191,168,0.15); }
+.theme-zen .theme-btn::after { background: rgba(23,20,15,0.95); color: rgba(200,191,168,0.7); font-family: 'Zen Kaku Gothic New', sans-serif; border: 1px solid rgba(200,191,168,0.15); }
+
+.theme-zen h1 {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 1.4rem; font-weight: 300;
+  letter-spacing: 0.6em;
+  color: rgba(200,191,168,0.5);
+  position: relative;
+  padding: 0 2.5rem;
+}
+.theme-zen h1::before, .theme-zen h1::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(200,191,168,0.18);
+  transform: translateY(-50%);
+}
+.theme-zen h1::before { left: 0; }
+.theme-zen h1::after { right: 0; bottom: auto; width: 6px; height: 6px; }
+
+.theme-zen #mode-selector { border-color: rgba(200,191,168,0.12); }
+.theme-zen .mode-btn { background: rgba(23,20,15,0.8); color: rgba(200,191,168,0.4); border-color: rgba(200,191,168,0.08); font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 0.7rem; letter-spacing: 0.15em; }
+.theme-zen .mode-btn:hover { color: rgba(200,191,168,0.7); background: rgba(200,191,168,0.04); }
+.theme-zen .mode-btn.active { background: rgba(200,191,168,0.06); color: rgba(200,191,168,0.8); border-bottom-color: rgba(200,191,168,0.4); }
+
+.theme-zen .ai-btn { background: rgba(23,20,15,0.6); border-color: rgba(200,191,168,0.1); color: rgba(200,191,168,0.35); font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 0.68rem; }
+.theme-zen .ai-btn:hover { border-color: rgba(200,191,168,0.25); color: rgba(200,191,168,0.6); }
+.theme-zen .ai-btn.active { border-color: rgba(200,191,168,0.35); color: rgba(200,191,168,0.7); background: rgba(200,191,168,0.05); }
+.theme-zen #ai-desc { color: rgba(200,191,168,0.3); font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 0.65rem; }
+
+.theme-zen .board-3x3 { gap: 0; padding: 0; background: transparent; }
+.theme-zen .board-3x3::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent calc(33.33% - 0.5px), rgba(200,191,168,0.18) calc(33.33%), transparent calc(33.33% + 0.5px)),
+    linear-gradient(90deg, transparent calc(66.66% - 0.5px), rgba(200,191,168,0.18) calc(66.66%), transparent calc(66.66% + 0.5px)),
+    linear-gradient(0deg, transparent calc(33.33% - 0.5px), rgba(200,191,168,0.18) calc(33.33%), transparent calc(33.33% + 0.5px)),
+    linear-gradient(0deg, transparent calc(66.66% - 0.5px), rgba(200,191,168,0.18) calc(66.66%), transparent calc(66.66% + 0.5px));
+}
+.theme-zen .cell {
+  width: 120px; height: 120px;
+  background: transparent; border: none; border-radius: 0;
+}
+.theme-zen .cell:hover:not(.taken) { background: rgba(200,191,168,0.03); }
+.theme-zen .cell:hover:not(.taken)::after {
+  content: '';
+  position: absolute;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: rgba(200,191,168,0.06);
+  pointer-events: none;
+}
+.theme-zen .cell:active:not(.taken) { transform: scale(0.97); transition: transform 0.15s; }
+
+.theme-zen .cell .token { animation: zenPlace 0.7s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+@keyframes zenPlace {
+  0% { opacity: 0; transform: scale(0.75); }
+  65% { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.zen-stone-x {
+  width: 54px; height: 54px; border-radius: 50%;
+  background: radial-gradient(ellipse at 38% 32%, #3a3530, #151210);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 3px rgba(255,255,255,0.07);
+}
+.zen-stone-o {
+  width: 54px; height: 54px; border-radius: 50%;
+  background: radial-gradient(ellipse at 38% 32%, #f0ece0, #c8c0a8);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 4px rgba(255,255,255,0.35);
+}
+
+.theme-zen .cell.win-cell { animation: zenWinGlow 2.5s ease-in-out infinite alternate; }
+@keyframes zenWinGlow {
+  0% { background: rgba(200,191,168,0.02); }
+  100% { background: rgba(200,191,168,0.07); }
+}
+.theme-zen .cell.win-cell .zen-stone-x { box-shadow: 0 0 22px rgba(180,160,120,0.35), 0 4px 14px rgba(0,0,0,0.55), inset 0 1px 3px rgba(255,255,255,0.07); }
+.theme-zen .cell.win-cell .zen-stone-o { box-shadow: 0 0 22px rgba(180,160,120,0.35), 0 4px 14px rgba(0,0,0,0.35), inset 0 1px 4px rgba(255,255,255,0.35); }
+
+.theme-zen #status { font-family: 'Noto Serif JP', serif; font-size: 0.9rem; font-weight: 300; letter-spacing: 0.35em; color: rgba(200,191,168,0.45); }
+.theme-zen #restart {
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  font-size: 0.75rem; font-weight: 300; letter-spacing: 0.35em;
+  padding: 0.6rem 2.2rem;
+  border: 1px solid rgba(200,191,168,0.12); color: rgba(200,191,168,0.4); border-radius: 0;
+}
+.theme-zen #restart:hover { border-color: rgba(200,191,168,0.3); color: rgba(200,191,168,0.7); }
+.theme-zen #help-toggle { font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 0.65rem; border-color: rgba(200,191,168,0.1); color: rgba(200,191,168,0.3); }
+.theme-zen #help-box { background: rgba(23,20,15,0.95); border-color: rgba(200,191,168,0.1); color: rgba(200,191,168,0.5); font-family: 'Noto Serif JP', serif; font-size: 0.8rem; }
+.theme-zen #help-box strong { color: rgba(200,191,168,0.75); }
+.theme-zen #score-area { font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 0.7rem; color: rgba(200,191,168,0.35); }
+
+/* Zen for special modes */
+.theme-zen .ultimate-board { background: rgba(200,191,168,0.04); border: 1px solid rgba(200,191,168,0.08); }
+.theme-zen .ultimate-sub { background: rgba(200,191,168,0.03); }
+.theme-zen .ultimate-sub.active-sub { box-shadow: 0 0 0 2px rgba(200,191,168,0.2); }
+.theme-zen .ucell { background: transparent; font-family: 'Noto Serif JP', serif; }
+.theme-zen .ucell:hover:not(.taken) { background: rgba(200,191,168,0.05); }
+.theme-zen .ucell.x { color: #8a7e68; }
+.theme-zen .ucell.o { color: #c8bfa8; }
+
+.theme-zen .cube-face { background: rgba(23,20,15,0.2); border-color: rgba(200,191,168,0.1); }
+.theme-zen .cube-cell { background: rgba(23,20,15,0.7); border-color: rgba(200,191,168,0.1); font-family: 'Noto Serif JP', serif; }
+.theme-zen .cube-cell:hover:not(.taken) { background: rgba(200,191,168,0.1); border-color: rgba(200,191,168,0.25); }
+.theme-zen .cube-cell.x { color: #8a7e68; background: rgba(35,30,20,0.7); }
+.theme-zen .cube-cell.o { color: #c8bfa8; background: rgba(30,28,22,0.7); }
+
+/* ==============================================================================
+   RESPONSIVE
+   ============================================================================== */
+@media (max-width: 500px) {
+  .cell { width: 90px; height: 90px; font-size: 2.2rem; }
+  .theme-neon .cell { width: 90px; height: 90px; }
+  .theme-sketch .cell { width: 90px; height: 90px; }
+  .theme-zen .cell { width: 95px; height: 95px; }
+  .zen-stone-x, .zen-stone-o { width: 42px; height: 42px; }
+  h1 { margin-bottom: 0.8rem; }
+  .theme-neon h1 { font-size: 1.1rem; letter-spacing: 0.2em; }
+  .theme-sketch h1 { font-size: 2rem; }
+  .theme-zen h1 { font-size: 1.1rem; letter-spacing: 0.3em; }
+  #theme-selector { top: 14px; right: 14px; padding: 5px 8px; gap: 7px; }
+  .theme-btn { width: 28px; height: 28px; }
+  body.theme-sketch::after { left: 40px; }
+}
 </style>
 </head>
-<body>
+<body class="theme-neon">
+
+<canvas id="bg-canvas"></canvas>
+
+<div id="theme-selector">
+  <button class="theme-btn active" data-theme="neon" data-label="Cyberpunk" title="Neon Cyberpunk"></button>
+  <button class="theme-btn" data-theme="sketch" data-label="Sketch" title="Hand-drawn Sketch"></button>
+  <button class="theme-btn" data-theme="zen" data-label="Zen" title="Zen Garden"></button>
+</div>
 
 <h1>Tic Tac Toe</h1>
-<div id="board"></div>
+
+<div id="mode-selector">
+  <button class="mode-btn active" data-mode="normal">Normal</button>
+  <button class="mode-btn" data-mode="ultimate">Ultimate</button>
+  <button class="mode-btn" data-mode="drunk">Drunk</button>
+  <button class="mode-btn" data-mode="gravity">Gravity</button>
+  <button class="mode-btn" data-mode="battle">Battle</button>
+  <button class="mode-btn" data-mode="cube">3D Cube</button>
+</div>
+
+<div id="ai-area">
+  <div id="ai-selector"></div>
+  <div id="ai-desc"></div>
+</div>
+
+<div id="help-box"></div>
+
+<div id="score-area">
+  <span>X (You): <span class="score-x" id="score-x">0</span></span>
+  <span>O (AI): <span class="score-o" id="score-o">0</span></span>
+</div>
+
+<div id="game-area"></div>
 <div id="status">Your move</div>
 <button id="restart">New Game</button>
+<button id="help-toggle">Rules</button>
 
 <script>
-const boardEl = document.getElementById('board');
+// ============================================================
+//  GLOBALS
+// ============================================================
+const gameArea = document.getElementById('game-area');
 const statusEl = document.getElementById('status');
 const restartBtn = document.getElementById('restart');
+const helpBox = document.getElementById('help-box');
+const helpToggle = document.getElementById('help-toggle');
+const scoreXEl = document.getElementById('score-x');
+const scoreOEl = document.getElementById('score-o');
+const selectorEl = document.getElementById('ai-selector');
+const descEl = document.getElementById('ai-desc');
+const aiAreaEl = document.getElementById('ai-area');
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
 
-let grid, gameOver, humanTurn;
-
-function init() {
-  grid = ['', '', '', '', '', '', '', '', ''];
-  gameOver = false;
-  humanTurn = true;
-  statusEl.textContent = 'Your move';
-  render();
-}
-
-function render() {
-  boardEl.innerHTML = '';
-  const winCells = getWinCells();
-  for (let i = 0; i < 9; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    if (grid[i]) {
-      cell.textContent = grid[i];
-      cell.classList.add(grid[i].toLowerCase(), 'taken');
-    }
-    if (winCells.has(i)) cell.classList.add('win');
-    cell.addEventListener('click', () => handleClick(i));
-    boardEl.appendChild(cell);
-  }
-}
-
-function handleClick(i) {
-  if (gameOver || !humanTurn || grid[i]) return;
-  grid[i] = 'X';
-  humanTurn = false;
-  render();
-
-  if (checkWinner('X')) {
-    statusEl.textContent = 'You win!';
-    gameOver = true;
-    render();
-    return;
-  }
-  if (isFull()) {
-    statusEl.textContent = "It's a draw!";
-    gameOver = true;
-    return;
-  }
-
-  statusEl.textContent = 'AI thinking...';
-  setTimeout(aiPlay, 300);
-}
-
-function aiPlay() {
-  const move = aiMove();
-  grid[move] = 'O';
-  render();
-
-  if (checkWinner('O')) {
-    statusEl.textContent = 'AI wins!';
-    gameOver = true;
-    render();
-    return;
-  }
-  if (isFull()) {
-    statusEl.textContent = "It's a draw!";
-    gameOver = true;
-    return;
-  }
-
-  humanTurn = true;
-  statusEl.textContent = 'Your move';
-}
-
-function minimax(isMaximizing) {
-  if (checkWinner('O')) return 1;
-  if (checkWinner('X')) return -1;
-  if (isFull()) return 0;
-
-  const empty = grid.map((v, i) => v === '' ? i : -1).filter(i => i >= 0);
-  if (isMaximizing) {
-    let best = -2;
-    for (const i of empty) {
-      grid[i] = 'O';
-      best = Math.max(best, minimax(false));
-      grid[i] = '';
-    }
-    return best;
-  } else {
-    let best = 2;
-    for (const i of empty) {
-      grid[i] = 'X';
-      best = Math.min(best, minimax(true));
-      grid[i] = '';
-    }
-    return best;
-  }
-}
-
-function aiMove() {
-  const empty = grid.map((v, i) => v === '' ? i : -1).filter(i => i >= 0);
-  let bestScore = -2, bestMove = empty[0];
-  for (const i of empty) {
-    grid[i] = 'O';
-    const score = minimax(false);
-    grid[i] = '';
-    if (score > bestScore) { bestScore = score; bestMove = i; }
-  }
-  return bestMove;
-}
+let currentMode = 'normal';
+let currentTheme = 'neon';
+let currentAI = 'minimax';
+let scores = { X: 0, O: 0 };
+let hasCelebrated = false;
+let animFrame;
 
 const LINES = [
   [0,1,2],[3,4,5],[6,7,8],
@@ -221,26 +1011,1062 @@ const LINES = [
   [0,4,8],[2,4,6]
 ];
 
-function checkWinner(token) {
-  return LINES.some(([a,b,c]) => grid[a] === token && grid[b] === token && grid[c] === token);
+const HELP_TEXT = {
+  normal: `<strong>Normal Tic-Tac-Toe.</strong> You are X, AI is O. Select an AI opponent above. Try to beat them!`,
+  ultimate: `<strong>Ultimate Tic-Tac-Toe.</strong> 9 sub-boards in a 3x3 grid. Win a sub-board to claim that meta-cell. <em>Your cell choice determines which sub-board your opponent plays in.</em> If that board is won/full, opponent plays anywhere. 3 meta-cells in a row wins.`,
+  drunk: `<strong>Drunk Mode.</strong> The board wobbles. Cells drift. Ghost tokens flash. Status has typos. The selected AI is also drunk — 30% random moves.`,
+  gravity: `<strong>Gravity Mode.</strong> Like Connect 4 meets Tic-Tac-Toe. Tokens fall to the bottom of each column. AI uses minimax.`,
+  battle: `<strong>Battle Mode.</strong> Tokens have 3 HP. Placing next to enemies deals 1 damage to each. At 0 HP tokens are destroyed. 3 in a row wins.`,
+  cube: `<strong>3D Tic-Tac-Toe.</strong> 3x3x3 cube with 49 winning lines. Drag to rotate. Click to place. AI uses heuristics.`,
+};
+
+// ============================================================
+//  AI STRATEGIES
+// ============================================================
+const AI_LIST = [
+  { id: 'minimax',  name: 'Minimax',     desc: 'Unbeatable. Full game-tree search. You cannot win.' },
+  { id: 'random',   name: 'Random',      desc: 'Picks a random legal move every time. Easy to beat.' },
+  { id: 'aggro',    name: 'Aggressive',   desc: 'Hunts for wins but forgets to block you.' },
+  { id: 'defense',  name: 'Defensive',    desc: 'Blocks every threat but never sets up its own attack.' },
+  { id: 'mcts',     name: 'MCTS',         desc: 'Monte Carlo Tree Search (1000 playouts). Strong but occasionally beatable.' },
+  { id: 'neural',   name: 'Neural Net',   desc: 'Simulated weight-based evaluation. Medium difficulty.' },
+  { id: 'chaos',    name: 'Chaos',        desc: '70% random, 30% perfect. Completely unpredictable.' },
+  { id: 'mirror',   name: 'Mirror',       desc: 'Copies your moves with symmetry. Falls back to random.' },
+];
+
+let lastHumanMove = null;
+
+// Build AI selector buttons
+AI_LIST.forEach(ai => {
+  const btn = document.createElement('button');
+  btn.className = 'ai-btn' + (ai.id === currentAI ? ' active' : '');
+  btn.textContent = ai.name;
+  btn.dataset.id = ai.id;
+  btn.addEventListener('click', () => {
+    currentAI = ai.id;
+    document.querySelectorAll('.ai-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    descEl.textContent = ai.desc;
+    startMode();
+  });
+  selectorEl.appendChild(btn);
+});
+descEl.textContent = AI_LIST[0].desc;
+
+// ============================================================
+//  SHARED HELPERS
+// ============================================================
+function empty(grid) { return grid.map((v,i) => v === '' ? i : -1).filter(i => i >= 0); }
+function isFull(grid) { return grid.every(c => c !== ''); }
+function check3x3(g, t) { return LINES.some(([a,b,c]) => g[a]===t && g[b]===t && g[c]===t); }
+function getWinCells3x3(g) {
+  const s = new Set();
+  for (const [a,b,c] of LINES) if (g[a] && g[a]===g[b] && g[b]===g[c]) { s.add(a); s.add(b); s.add(c); }
+  return s;
 }
 
-function getWinCells() {
-  const cells = new Set();
-  for (const [a,b,c] of LINES) {
-    if (grid[a] && grid[a] === grid[b] && grid[b] === grid[c]) {
-      cells.add(a); cells.add(b); cells.add(c);
+// ============================================================
+//  MINIMAX CORE
+// ============================================================
+function minimax3x3(grid, isMax) {
+  if (check3x3(grid, 'O')) return 1;
+  if (check3x3(grid, 'X')) return -1;
+  if (isFull(grid)) return 0;
+  const e = empty(grid);
+  if (isMax) {
+    let best = -2;
+    for (const i of e) { grid[i]='O'; best=Math.max(best,minimax3x3(grid,false)); grid[i]=''; }
+    return best;
+  } else {
+    let best = 2;
+    for (const i of e) { grid[i]='X'; best=Math.min(best,minimax3x3(grid,true)); grid[i]=''; }
+    return best;
+  }
+}
+function bestMinimax(grid) {
+  const e = empty(grid); let bs=-2, bm=e[0];
+  for (const i of e) { grid[i]='O'; const s=minimax3x3(grid,false); grid[i]=''; if(s>bs){bs=s;bm=i;} }
+  return bm;
+}
+
+// ============================================================
+//  AI IMPLEMENTATIONS
+// ============================================================
+function aiRandom(grid) { const e=empty(grid); return e[Math.floor(Math.random()*e.length)]; }
+
+function aiAggressive(grid) {
+  const e = empty(grid);
+  for (const i of e) { grid[i]='O'; if(check3x3(grid,'O')){grid[i]='';return i;} grid[i]=''; }
+  let best=-1, bs=-1;
+  for (const i of e) {
+    grid[i]='O';
+    let sc=0;
+    for (const [a,b,c] of LINES) {
+      const v=[grid[a],grid[b],grid[c]];
+      if(v.filter(x=>x==='O').length===2 && v.filter(x=>x==='').length===1) sc++;
+    }
+    grid[i]='';
+    if(sc>bs){bs=sc;best=i;}
+  }
+  if(best>=0 && bs>0) return best;
+  return aiRandom(grid);
+}
+
+function aiDefensive(grid) {
+  const e = empty(grid);
+  for (const i of e) { grid[i]='O'; if(check3x3(grid,'O')){grid[i]='';return i;} grid[i]=''; }
+  for (const i of e) { grid[i]='X'; if(check3x3(grid,'X')){grid[i]='';return i;} grid[i]=''; }
+  return aiRandom(grid);
+}
+
+function aiMCTS(grid, N) {
+  N = N || 1000;
+  const e = empty(grid);
+  let bm=e[0], bs=-Infinity;
+  for (const i of e) {
+    grid[i]='O';
+    if (check3x3(grid,'O')) { grid[i]=''; return i; }
+    let wins=0;
+    for (let p=0;p<N;p++) {
+      const sim = grid.slice();
+      let player='X', done=false;
+      while(!done) {
+        const se=sim.map((v,j)=>v===''?j:-1).filter(j=>j>=0);
+        if(!se.length){done=true;break;}
+        const m=se[Math.floor(Math.random()*se.length)];
+        sim[m]=player;
+        if(LINES.some(([a,b,c])=>sim[a]===player&&sim[b]===player&&sim[c]===player)) {
+          wins += player==='O' ? 1 : -1;
+          done=true; break;
+        }
+        player = player==='O'?'X':'O';
+      }
+    }
+    grid[i]='';
+    if(wins>bs){bs=wins;bm=i;}
+  }
+  return bm;
+}
+
+function aiNeural(grid) {
+  const e = empty(grid);
+  const posW = [3,2,3, 2,4,2, 3,2,3];
+  let bm=e[0], bs=-Infinity;
+  for (const i of e) {
+    grid[i]='O';
+    if (check3x3(grid,'O')) { grid[i]=''; return i; }
+    let sc=0;
+    for (let j=0;j<9;j++) { if(grid[j]==='O') sc+=posW[j]; else if(grid[j]==='X') sc-=posW[j]; }
+    for (const [a,b,c] of LINES) {
+      const v=[grid[a],grid[b],grid[c]];
+      const oc=v.filter(x=>x==='O').length, xc=v.filter(x=>x==='X').length;
+      if(xc===0){ if(oc===2) sc+=10; else if(oc===1) sc+=1; }
+      if(oc===0){ if(xc===2) sc-=8; else if(xc===1) sc-=0.5; }
+    }
+    sc += (Math.random()-0.5);
+    grid[i]='';
+    if(sc>bs){bs=sc;bm=i;}
+  }
+  return bm;
+}
+
+function aiChaos(grid) { return Math.random()<0.3 ? bestMinimax(grid) : aiRandom(grid); }
+
+function aiMirror(grid) {
+  const e = empty(grid);
+  if (lastHumanMove !== null) {
+    const r = Math.floor(lastHumanMove/3), c = lastHumanMove%3;
+    const transforms = [(2-r)*3+(2-c), c*3+r, (2-c)*3+(2-r), r*3+(2-c), (2-r)*3+c];
+    for (const t of transforms) { if (e.includes(t)) return t; }
+  }
+  return aiRandom(grid);
+}
+
+function getAIMove(grid) {
+  switch(currentAI) {
+    case 'minimax': return bestMinimax(grid);
+    case 'random':  return aiRandom(grid);
+    case 'aggro':   return aiAggressive(grid);
+    case 'defense': return aiDefensive(grid);
+    case 'mcts':    return aiMCTS(grid, 1000);
+    case 'neural':  return aiNeural(grid);
+    case 'chaos':   return aiChaos(grid);
+    case 'mirror':  return aiMirror(grid);
+    default:        return bestMinimax(grid);
+  }
+}
+
+// Drunk AI: wraps selected AI with 30% random
+function getDrunkAIMove(grid) {
+  if (Math.random() < 0.3) return aiRandom(grid);
+  return getAIMove(grid);
+}
+
+// ============================================================
+//  THEME MANAGEMENT
+// ============================================================
+function setTheme(theme) {
+  document.body.className = `theme-${theme} theme-transitioning`;
+  currentTheme = theme;
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+  cancelAnimationFrame(animFrame);
+  resizeCanvas();
+  if (theme === 'neon') initNeonParticles();
+  drawBackground();
+  // Re-render current mode to update themed tokens
+  const m = modes[currentMode];
+  if (m && m.render) m.render();
+  setTimeout(() => document.body.classList.remove('theme-transitioning'), 500);
+}
+
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => setTheme(btn.dataset.theme));
+});
+
+// ============================================================
+//  CANVAS BACKGROUNDS
+// ============================================================
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+let neonParticles = [];
+function initNeonParticles() {
+  neonParticles = [];
+  for (let i = 0; i < 35; i++) {
+    neonParticles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      size: Math.random() * 1.8 + 0.5,
+      alpha: Math.random() * 0.35 + 0.08,
+      hue: Math.random() > 0.5 ? 180 : 300
+    });
+  }
+}
+initNeonParticles();
+
+function drawNeonBg() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'rgba(0,255,255,0.025)';
+  ctx.lineWidth = 1;
+  const gs = 50;
+  for (let x = 0; x < canvas.width; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+  for (let y = 0; y < canvas.height; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+  for (const p of neonParticles) {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+    const c = p.hue === 180 ? `rgba(0,255,255,${p.alpha})` : `rgba(255,0,255,${p.alpha})`;
+    const cg = p.hue === 180 ? `rgba(0,255,255,${p.alpha * 0.12})` : `rgba(255,0,255,${p.alpha * 0.12})`;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 4, 0, Math.PI * 2); ctx.fillStyle = cg; ctx.fill();
+  }
+}
+
+function drawZenBg() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const time = Date.now() * 0.00008;
+  ctx.strokeStyle = 'rgba(200,191,168,0.015)';
+  ctx.lineWidth = 1;
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  for (let r = 60; r < 500; r += 40) {
+    ctx.beginPath();
+    for (let a = 0; a <= Math.PI * 2; a += 0.02) {
+      const wobble = Math.sin(a * 3 + time + r * 0.01) * 2;
+      const px = cx + (r + wobble) * Math.cos(a);
+      const py = cy + (r + wobble) * Math.sin(a);
+      if (a === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath(); ctx.stroke();
+  }
+}
+
+function drawBackground() {
+  if (currentTheme === 'neon') drawNeonBg();
+  else if (currentTheme === 'sketch') ctx.clearRect(0, 0, canvas.width, canvas.height);
+  else if (currentTheme === 'zen') drawZenBg();
+  animFrame = requestAnimationFrame(drawBackground);
+}
+drawBackground();
+
+// ============================================================
+//  SVG GENERATORS FOR SKETCH THEME
+// ============================================================
+function svgAnimate(attrs) {
+  const anim = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+  for (const [k, v] of Object.entries(attrs)) anim.setAttribute(k, v);
+  return anim;
+}
+
+function makeSketchX() {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.style.cssText = 'position:absolute;width:62%;height:62%;top:19%;left:19%;';
+  const r = () => (Math.random() - 0.5) * 6;
+  const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  line1.setAttribute('d', `M${12+r()},${12+r()} Q${50+r()},${50+r()} ${88+r()},${88+r()}`);
+  line1.setAttribute('stroke', '#2a6496'); line1.setAttribute('stroke-width', '5');
+  line1.setAttribute('fill', 'none'); line1.setAttribute('stroke-linecap', 'round');
+  line1.setAttribute('stroke-dasharray', '200'); line1.setAttribute('stroke-dashoffset', '200');
+  line1.appendChild(svgAnimate({attributeName:'stroke-dashoffset', from:'200', to:'0', dur:'0.3s', fill:'freeze'}));
+  const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  line2.setAttribute('d', `M${88+r()},${12+r()} Q${50+r()},${50+r()} ${12+r()},${88+r()}`);
+  line2.setAttribute('stroke', '#2a6496'); line2.setAttribute('stroke-width', '5');
+  line2.setAttribute('fill', 'none'); line2.setAttribute('stroke-linecap', 'round');
+  line2.setAttribute('stroke-dasharray', '200'); line2.setAttribute('stroke-dashoffset', '200');
+  line2.appendChild(svgAnimate({attributeName:'stroke-dashoffset', from:'200', to:'0', dur:'0.3s', begin:'0.15s', fill:'freeze'}));
+  svg.appendChild(line1); svg.appendChild(line2);
+  return svg;
+}
+
+function makeSketchO() {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.style.cssText = 'position:absolute;width:62%;height:62%;top:19%;left:19%;';
+  const r = () => (Math.random() - 0.5) * 4;
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  circle.setAttribute('d', `M50,${14+r()} C${75+r()},${14+r()} ${86+r()},${35+r()} ${86+r()},${50+r()} C${86+r()},${65+r()} ${75+r()},${86+r()} ${50+r()},${86+r()} C${25+r()},${86+r()} ${14+r()},${65+r()} ${14+r()},${50+r()} C${14+r()},${35+r()} ${25+r()},${14+r()} 50,${14+r()} Z`);
+  circle.setAttribute('stroke', '#c0392b'); circle.setAttribute('stroke-width', '4.5');
+  circle.setAttribute('fill', 'none'); circle.setAttribute('stroke-linecap', 'round');
+  circle.setAttribute('stroke-dasharray', '300'); circle.setAttribute('stroke-dashoffset', '300');
+  circle.appendChild(svgAnimate({attributeName:'stroke-dashoffset', from:'300', to:'0', dur:'0.4s', fill:'freeze'}));
+  svg.appendChild(circle);
+  return svg;
+}
+
+// ============================================================
+//  THEMED TOKEN RENDERING FOR 3x3 CELLS
+// ============================================================
+function renderThemedToken(cell, tokenChar) {
+  cell.classList.add('taken', tokenChar.toLowerCase());
+  const token = document.createElement('div');
+  token.className = `token ${tokenChar.toLowerCase()}-token`;
+
+  if (currentTheme === 'zen') {
+    const stone = document.createElement('div');
+    stone.className = tokenChar === 'X' ? 'zen-stone-x' : 'zen-stone-o';
+    token.appendChild(stone);
+  } else if (currentTheme === 'sketch') {
+    token.appendChild(tokenChar === 'X' ? makeSketchX() : makeSketchO());
+  } else {
+    token.textContent = tokenChar;
+  }
+  cell.appendChild(token);
+}
+
+// ============================================================
+//  CELEBRATION PARTICLES
+// ============================================================
+function celebrate() {
+  if (hasCelebrated) return;
+  hasCelebrated = true;
+  const palettes = {
+    neon:   ['#0ff', '#f0f', '#0ff', '#ff0', '#f0f', '#0af'],
+    sketch: ['#2a6496', '#c0392b', '#e8a838', '#4a8c5c', '#8e5ea2', '#d4782f'],
+    zen:    ['#c8bfa8', '#a09880', '#d4cbb8', '#8a7e68', '#b0a890']
+  };
+  const palette = palettes[currentTheme] || palettes.neon;
+  const count = currentTheme === 'zen' ? 12 : 35;
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random() * 8 + 3;
+      const x = Math.random() * window.innerWidth;
+      const dur = Math.random() * 2 + 1.5;
+      const color = palette[Math.floor(Math.random() * palette.length)];
+      let extra = '';
+      if (currentTheme === 'neon') extra = `border-radius:${Math.random()>0.5?'50%':'2px'};box-shadow:0 0 ${size+4}px ${color};`;
+      else if (currentTheme === 'sketch') extra = `border-radius:${Math.random()>0.4?'50%':'3px'};`;
+      else extra = 'border-radius:50%;opacity:0.5;';
+      p.style.cssText = `left:${x}px;top:-12px;width:${size}px;height:${size}px;background:${color};animation-duration:${dur}s;${extra}`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), dur * 1000);
+    }, i * 55);
+  }
+}
+
+function setStatus(text) {
+  statusEl.textContent = text;
+  statusEl.classList.remove('status-change');
+  void statusEl.offsetWidth;
+  statusEl.classList.add('status-change');
+}
+
+// ============================================================
+//  MODE & SCORE MANAGEMENT
+// ============================================================
+function updateScores() {
+  scoreXEl.textContent = scores.X;
+  scoreOEl.textContent = scores.O;
+}
+
+const AI_MODES = ['normal', 'drunk']; // modes that use the AI selector
+
+function startMode() {
+  gameArea.innerHTML = '';
+  hasCelebrated = false;
+  lastHumanMove = null;
+  setStatus('Your move');
+  aiAreaEl.classList.toggle('hidden', !AI_MODES.includes(currentMode));
+  const m = modes[currentMode];
+  if (m) m.init();
+}
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    scores = { X: 0, O: 0 };
+    updateScores();
+    helpBox.classList.remove('visible');
+    startMode();
+  });
+});
+
+helpToggle.addEventListener('click', () => {
+  helpBox.innerHTML = HELP_TEXT[currentMode] || '';
+  helpBox.classList.toggle('visible');
+});
+
+restartBtn.addEventListener('click', () => { hasCelebrated = false; startMode(); });
+
+// ============================================================
+//  NORMAL MODE
+// ============================================================
+const modes = {};
+
+modes.normal = {
+  grid: null, gameOver: false, humanTurn: true,
+  init() {
+    this.grid = Array(9).fill('');
+    this.gameOver = false;
+    this.humanTurn = true;
+    lastHumanMove = null;
+    hasCelebrated = false;
+    setStatus('Your move');
+    this.render();
+  },
+  render() {
+    gameArea.innerHTML = '';
+    const board = document.createElement('div');
+    board.className = 'board-3x3';
+    const wc = getWinCells3x3(this.grid);
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (this.grid[i]) renderThemedToken(cell, this.grid[i]);
+      if (wc.has(i)) cell.classList.add('win-cell');
+      cell.addEventListener('click', () => this.click(i));
+      board.appendChild(cell);
+    }
+    gameArea.appendChild(board);
+    if (wc.size > 0) celebrate();
+  },
+  click(i) {
+    if (this.gameOver || !this.humanTurn || this.grid[i]) return;
+    this.grid[i] = 'X';
+    lastHumanMove = i;
+    this.humanTurn = false;
+    this.render();
+    if (check3x3(this.grid, 'X')) { setStatus('You win!'); this.gameOver = true; scores.X++; updateScores(); this.render(); return; }
+    if (isFull(this.grid)) { setStatus("It's a draw!"); this.gameOver = true; gameArea.querySelector('.board-3x3').classList.add('draw-shake'); return; }
+    setStatus('AI thinking...');
+    setTimeout(() => this.ai(), currentAI==='mcts' ? 50 : 250);
+  },
+  ai() {
+    const mv = getAIMove(this.grid);
+    this.grid[mv] = 'O';
+    this.render();
+    if (check3x3(this.grid, 'O')) { setStatus('AI wins!'); this.gameOver = true; scores.O++; updateScores(); this.render(); return; }
+    if (isFull(this.grid)) { setStatus("It's a draw!"); this.gameOver = true; gameArea.querySelector('.board-3x3').classList.add('draw-shake'); return; }
+    this.humanTurn = true;
+    setStatus('Your move');
+  }
+};
+
+// ============================================================
+//  ULTIMATE TIC-TAC-TOE
+// ============================================================
+modes.ultimate = {
+  boards: null, metaBoard: null, activeBoard: null,
+  gameOver: false, humanTurn: true,
+
+  init() {
+    this.boards = Array.from({length:9}, () => Array(9).fill(''));
+    this.metaBoard = Array(9).fill('');
+    this.activeBoard = null;
+    this.gameOver = false;
+    this.humanTurn = true;
+    hasCelebrated = false;
+    setStatus('Your move (play anywhere)');
+    this.render();
+  },
+
+  checkSubWinner(bi) {
+    const b = this.boards[bi];
+    for (const [a,b2,c] of LINES) { if (b[a] && b[a]===b[b2] && b[b2]===b[c]) return b[a]; }
+    return null;
+  },
+  isSubFull(bi) { return this.boards[bi].every(c => c !== ''); },
+
+  render() {
+    gameArea.innerHTML = '';
+    const container = document.createElement('div');
+    container.className = 'ultimate-board';
+    for (let bi = 0; bi < 9; bi++) {
+      const sub = document.createElement('div');
+      sub.className = 'ultimate-sub';
+      const winner = this.metaBoard[bi];
+      const subFull = this.isSubFull(bi);
+      const canPlay = !this.gameOver && this.humanTurn && (this.activeBoard === null || this.activeBoard === bi) && !winner && !subFull;
+      if (canPlay) sub.classList.add('active-sub');
+      if (winner === 'X') sub.classList.add('won-x');
+      if (winner === 'O') sub.classList.add('won-o');
+      if (winner || (subFull && !winner)) {
+        const ov = document.createElement('div');
+        ov.className = 'sub-winner-overlay';
+        if (winner === 'X') { ov.classList.add('x-overlay'); ov.textContent = 'X'; }
+        else if (winner === 'O') { ov.classList.add('o-overlay'); ov.textContent = 'O'; }
+        else { ov.classList.add('draw-overlay'); ov.textContent = '='; }
+        sub.appendChild(ov);
+      }
+      for (let ci = 0; ci < 9; ci++) {
+        const cell = document.createElement('div');
+        cell.className = 'ucell';
+        if (this.boards[bi][ci]) { cell.textContent = this.boards[bi][ci]; cell.classList.add(this.boards[bi][ci].toLowerCase(), 'taken'); }
+        cell.addEventListener('click', () => this.click(bi, ci));
+        sub.appendChild(cell);
+      }
+      container.appendChild(sub);
+    }
+    gameArea.appendChild(container);
+    if (check3x3(this.metaBoard, 'X') || check3x3(this.metaBoard, 'O')) celebrate();
+  },
+
+  click(bi, ci) {
+    if (this.gameOver || !this.humanTurn) return;
+    if (this.activeBoard !== null && this.activeBoard !== bi) return;
+    if (this.metaBoard[bi] || this.isSubFull(bi)) return;
+    if (this.boards[bi][ci]) return;
+    this.boards[bi][ci] = 'X';
+    const w = this.checkSubWinner(bi);
+    if (w) this.metaBoard[bi] = w;
+    if (check3x3(this.metaBoard, 'X')) { this.gameOver = true; scores.X++; updateScores(); setStatus('You win the ultimate game!'); this.render(); return; }
+    if (this.metaBoard.every(c => c !== '')) { this.gameOver = true; setStatus('Ultimate draw!'); this.render(); return; }
+    this.activeBoard = (this.metaBoard[ci] || this.isSubFull(ci)) ? null : ci;
+    this.humanTurn = false;
+    setStatus('AI thinking...');
+    this.render();
+    setTimeout(() => this.ai(), 300);
+  },
+
+  ai() {
+    let candidates = [];
+    if (this.activeBoard !== null) {
+      candidates = [{bi: this.activeBoard, cells: this.boards[this.activeBoard].map((v,i)=>v===''?i:-1).filter(i=>i>=0)}];
+    } else {
+      for (let bi = 0; bi < 9; bi++) {
+        if (!this.metaBoard[bi] && !this.isSubFull(bi)) candidates.push({bi, cells: this.boards[bi].map((v,i)=>v===''?i:-1).filter(i=>i>=0)});
+      }
+    }
+    let bestMove = null, bestScore = -Infinity;
+    for (const {bi, cells} of candidates) {
+      for (const ci of cells) {
+        let score = 0;
+        this.boards[bi][ci] = 'O';
+        if (this.checkSubWinner(bi) === 'O') score += 100;
+        this.boards[bi][ci] = '';
+        this.boards[bi][ci] = 'X';
+        if (this.checkSubWinner(bi) === 'X') score += 80;
+        this.boards[bi][ci] = '';
+        if (bi === 4) score += 10;
+        if (ci === 4) score += 5;
+        const dest = ci;
+        if (this.metaBoard[dest] || this.isSubFull(dest)) score -= 15;
+        this.boards[bi][ci] = 'O';
+        const subW = this.checkSubWinner(bi);
+        if (subW === 'O') { const old = this.metaBoard[bi]; this.metaBoard[bi] = 'O'; if (check3x3(this.metaBoard, 'O')) score += 1000; this.metaBoard[bi] = old; }
+        this.boards[bi][ci] = '';
+        score += Math.random() * 3;
+        if (score > bestScore) { bestScore = score; bestMove = {bi, ci}; }
+      }
+    }
+    if (!bestMove) { this.gameOver = true; setStatus('Draw!'); this.render(); return; }
+    this.boards[bestMove.bi][bestMove.ci] = 'O';
+    const w = this.checkSubWinner(bestMove.bi);
+    if (w) this.metaBoard[bestMove.bi] = w;
+    if (check3x3(this.metaBoard, 'O')) { this.gameOver = true; scores.O++; updateScores(); setStatus('AI wins the ultimate game!'); this.render(); return; }
+    if (this.metaBoard.every(c => c !== '')) { this.gameOver = true; setStatus('Ultimate draw!'); this.render(); return; }
+    const nextBI = bestMove.ci;
+    this.activeBoard = (this.metaBoard[nextBI] || this.isSubFull(nextBI)) ? null : nextBI;
+    this.humanTurn = true;
+    setStatus(this.activeBoard === null ? 'Your move (play anywhere)' : `Your move (board ${this.activeBoard + 1})`);
+    this.render();
+  }
+};
+
+// ============================================================
+//  DRUNK MODE
+// ============================================================
+modes.drunk = {
+  grid: null, gameOver: false, humanTurn: true, typoTimeout: null,
+
+  init() {
+    this.grid = Array(9).fill('');
+    this.gameOver = false;
+    this.humanTurn = true;
+    lastHumanMove = null;
+    hasCelebrated = false;
+    statusEl.textContent = 'Yoour moev';
+    clearTimeout(this.typoTimeout);
+    this.typoTimeout = setTimeout(() => { statusEl.textContent = 'Your move'; }, 800);
+    this.render();
+  },
+
+  setDrunkStatus(correct) {
+    const typo = this.makeTypo(correct);
+    statusEl.textContent = typo;
+    clearTimeout(this.typoTimeout);
+    this.typoTimeout = setTimeout(() => { statusEl.textContent = correct; }, 700 + Math.random() * 600);
+  },
+  makeTypo(text) {
+    const arr = text.split('');
+    const swaps = 1 + Math.floor(Math.random() * 2);
+    for (let s = 0; s < swaps; s++) {
+      const i = Math.floor(Math.random() * (arr.length - 1));
+      if (arr[i] !== ' ' && arr[i+1] !== ' ') [arr[i], arr[i+1]] = [arr[i+1], arr[i]];
+    }
+    return arr.join('');
+  },
+
+  render() {
+    gameArea.innerHTML = '';
+    const board = document.createElement('div');
+    board.className = 'board-3x3 drunk-board';
+    const wc = getWinCells3x3(this.grid);
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.style.setProperty('--drift-delay', (i * 0.4 + Math.random() * 0.5) + 's');
+      if (this.grid[i]) renderThemedToken(cell, this.grid[i]);
+      if (wc.has(i)) cell.classList.add('win-cell');
+      cell.addEventListener('click', () => this.click(i));
+      board.appendChild(cell);
+    }
+    gameArea.appendChild(board);
+    if (wc.size > 0) celebrate();
+    // Ghost tokens
+    if (!this.gameOver) {
+      setTimeout(() => {
+        const cells = board.querySelectorAll('.cell');
+        const empties = [];
+        for (let i = 0; i < 9; i++) if (!this.grid[i]) empties.push(i);
+        if (empties.length > 0) {
+          const ri = empties[Math.floor(Math.random() * empties.length)];
+          const ghostCell = cells[ri];
+          if (ghostCell) {
+            ghostCell.textContent = Math.random() > 0.5 ? 'X' : 'O';
+            ghostCell.style.opacity = '0.3';
+            ghostCell.classList.add('drunk-flash');
+            setTimeout(() => { if (!this.grid[ri]) { ghostCell.textContent = ''; ghostCell.style.opacity = '1'; } }, 350);
+          }
+        }
+      }, 800 + Math.random() * 1500);
+    }
+  },
+
+  click(i) {
+    if (this.gameOver || !this.humanTurn || this.grid[i]) return;
+    this.grid[i] = 'X';
+    lastHumanMove = i;
+    this.humanTurn = false;
+    this.render();
+    const board = gameArea.querySelector('.board-3x3');
+    if (board) { board.classList.add('drunk-hiccup'); setTimeout(() => board.classList.remove('drunk-hiccup'), 2000); }
+    if (check3x3(this.grid, 'X')) { this.setDrunkStatus('You win! ...wait, really?'); this.gameOver = true; scores.X++; updateScores(); this.render(); return; }
+    if (isFull(this.grid)) { this.setDrunkStatus("It's a draw... I think"); this.gameOver = true; return; }
+    this.setDrunkStatus('AI thinkning...');
+    setTimeout(() => this.ai(), 400 + Math.random() * 400);
+  },
+
+  ai() {
+    const mv = getDrunkAIMove(this.grid);
+    this.grid[mv] = 'O';
+    this.render();
+    if (check3x3(this.grid, 'O')) { this.setDrunkStatus('AI wins! *hic*'); this.gameOver = true; scores.O++; updateScores(); this.render(); return; }
+    if (isFull(this.grid)) { this.setDrunkStatus("Draw... prboably"); this.gameOver = true; return; }
+    this.humanTurn = true;
+    this.setDrunkStatus('Yuor moev');
+  }
+};
+
+// ============================================================
+//  GRAVITY MODE
+// ============================================================
+modes.gravity = {
+  grid: null, gameOver: false, humanTurn: true,
+
+  init() {
+    this.grid = Array(9).fill('');
+    this.gameOver = false;
+    this.humanTurn = true;
+    hasCelebrated = false;
+    setStatus('Pick a column');
+    this.render();
+  },
+  getDropRow(col) {
+    for (let row = 2; row >= 0; row--) { if (this.grid[row * 3 + col] === '') return row; }
+    return -1;
+  },
+  render() {
+    gameArea.innerHTML = '';
+    const board = document.createElement('div');
+    board.className = 'board-3x3';
+    const wc = getWinCells3x3(this.grid);
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const col = i % 3;
+      if (this.grid[i]) renderThemedToken(cell, this.grid[i]);
+      else {
+        const dropRow = this.getDropRow(col);
+        if (dropRow >= 0 && i === dropRow * 3 + col) cell.classList.add('gravity-target');
+      }
+      if (wc.has(i)) cell.classList.add('win-cell');
+      cell.addEventListener('click', () => this.click(col));
+      board.appendChild(cell);
+    }
+    gameArea.appendChild(board);
+    if (wc.size > 0) celebrate();
+  },
+  click(col) {
+    if (this.gameOver || !this.humanTurn) return;
+    const row = this.getDropRow(col);
+    if (row < 0) return;
+    const idx = row * 3 + col;
+    this.grid[idx] = 'X';
+    this.humanTurn = false;
+    this.render();
+    const cells = gameArea.querySelectorAll('.cell');
+    if (cells[idx]) cells[idx].classList.add('gravity-fall');
+    if (check3x3(this.grid, 'X')) { setStatus('You win!'); this.gameOver = true; scores.X++; updateScores(); this.render(); return; }
+    if (isFull(this.grid)) { setStatus("Draw!"); this.gameOver = true; return; }
+    setStatus('AI thinking...');
+    setTimeout(() => this.ai(), 350);
+  },
+  ai() {
+    const mv = this.bestGravityMove();
+    const row = this.getDropRow(mv);
+    const idx = row * 3 + mv;
+    this.grid[idx] = 'O';
+    this.render();
+    const cells = gameArea.querySelectorAll('.cell');
+    if (cells[idx]) cells[idx].classList.add('gravity-fall');
+    if (check3x3(this.grid, 'O')) { setStatus('AI wins!'); this.gameOver = true; scores.O++; updateScores(); this.render(); return; }
+    if (isFull(this.grid)) { setStatus("Draw!"); this.gameOver = true; return; }
+    this.humanTurn = true;
+    setStatus('Pick a column');
+  },
+  bestGravityMove() {
+    let bestScore = -2, bestCol = 0;
+    for (let col = 0; col < 3; col++) {
+      const row = this.getDropRow(col);
+      if (row < 0) continue;
+      const idx = row * 3 + col;
+      this.grid[idx] = 'O';
+      const s = this.gravMinimax(false, 6);
+      this.grid[idx] = '';
+      if (s > bestScore) { bestScore = s; bestCol = col; }
+    }
+    return bestCol;
+  },
+  gravMinimax(isMax, depth) {
+    if (check3x3(this.grid, 'O')) return 1;
+    if (check3x3(this.grid, 'X')) return -1;
+    if (isFull(this.grid) || depth <= 0) return 0;
+    if (isMax) {
+      let best = -2;
+      for (let col = 0; col < 3; col++) { const row=this.getDropRow(col); if(row<0)continue; const idx=row*3+col; this.grid[idx]='O'; best=Math.max(best,this.gravMinimax(false,depth-1)); this.grid[idx]=''; }
+      return best;
+    } else {
+      let best = 2;
+      for (let col = 0; col < 3; col++) { const row=this.getDropRow(col); if(row<0)continue; const idx=row*3+col; this.grid[idx]='X'; best=Math.min(best,this.gravMinimax(true,depth-1)); this.grid[idx]=''; }
+      return best;
     }
   }
-  return cells;
-}
+};
 
-function isFull() {
-  return grid.every(c => c !== '');
-}
+// ============================================================
+//  BATTLE MODE
+// ============================================================
+modes.battle = {
+  grid: null, gameOver: false, humanTurn: true, MAX_HP: 3,
 
-restartBtn.addEventListener('click', init);
-init();
+  init() {
+    this.grid = Array(9).fill(null);
+    this.gameOver = false;
+    this.humanTurn = true;
+    hasCelebrated = false;
+    setStatus('Your move (place X to attack!)');
+    this.render();
+  },
+  neighbors(i) {
+    const r=Math.floor(i/3),c=i%3,n=[];
+    if(r>0)n.push(i-3); if(r<2)n.push(i+3); if(c>0)n.push(i-1); if(c<2)n.push(i+1);
+    if(r>0&&c>0)n.push(i-4); if(r>0&&c<2)n.push(i-2); if(r<2&&c>0)n.push(i+2); if(r<2&&c<2)n.push(i+4);
+    return n;
+  },
+  placeToken(i, token) {
+    this.grid[i] = { token, hp: this.MAX_HP };
+    const killed = [];
+    for (const ni of this.neighbors(i)) {
+      const t = this.grid[ni];
+      if (t && t.token !== token) { t.hp -= 1; if (t.hp <= 0) killed.push(ni); }
+    }
+    return killed;
+  },
+  removeKilled(killed) { for (const i of killed) this.grid[i] = null; },
+  checkWin(token) { return LINES.some(([a,b,c]) => this.grid[a]&&this.grid[a].token===token && this.grid[b]&&this.grid[b].token===token && this.grid[c]&&this.grid[c].token===token); },
+  getWinCellsBattle() {
+    const s = new Set();
+    for (const [a,b,c] of LINES) {
+      if(this.grid[a]&&this.grid[b]&&this.grid[c] && this.grid[a].token===this.grid[b].token && this.grid[b].token===this.grid[c].token) { s.add(a);s.add(b);s.add(c); }
+    }
+    return s;
+  },
+  isBattleFull() { return this.grid.every(c => c !== null); },
+
+  render(shakeSet, deathSet) {
+    gameArea.innerHTML = '';
+    const board = document.createElement('div');
+    board.className = 'board-3x3';
+    const wc = this.getWinCellsBattle();
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const t = this.grid[i];
+      if (t) {
+        cell.textContent = t.token;
+        cell.classList.add(t.token.toLowerCase(), 'taken');
+        const hpBar = document.createElement('div'); hpBar.className = 'hp-bar';
+        const hpFill = document.createElement('div'); hpFill.className = 'hp-fill hp-' + t.token.toLowerCase();
+        hpFill.style.width = (t.hp / this.MAX_HP * 100) + '%';
+        hpBar.appendChild(hpFill); cell.appendChild(hpBar);
+        const hpText = document.createElement('div'); hpText.className = 'hp-text'; hpText.textContent = t.hp + '/' + this.MAX_HP;
+        cell.appendChild(hpText);
+      }
+      if (wc.has(i)) cell.classList.add('win');
+      if (shakeSet && shakeSet.has(i)) cell.classList.add('damage-shake');
+      if (deathSet && deathSet.has(i)) cell.classList.add('death-anim');
+      cell.addEventListener('click', () => this.click(i));
+      board.appendChild(cell);
+    }
+    gameArea.appendChild(board);
+    if (wc.size > 0) celebrate();
+  },
+
+  click(i) {
+    if (this.gameOver || !this.humanTurn || this.grid[i]) return;
+    const killed = this.placeToken(i, 'X');
+    const shakeSet = new Set();
+    for (const ni of this.neighbors(i)) { if (this.grid[ni] && this.grid[ni].token !== 'X') shakeSet.add(ni); }
+    this.render(shakeSet, new Set(killed));
+    setTimeout(() => {
+      this.removeKilled(killed);
+      this.render();
+      if (this.checkWin('X')) { setStatus('You win the battle!'); this.gameOver = true; scores.X++; updateScores(); this.render(); return; }
+      if (this.isBattleFull() && !this.checkWin('X') && !this.checkWin('O')) { setStatus('Stalemate!'); this.gameOver = true; return; }
+      this.humanTurn = false;
+      setStatus('AI attacking...');
+      setTimeout(() => this.ai(), 350);
+    }, 400);
+  },
+
+  ai() {
+    const emptyIdxs = this.grid.map((v,i) => v===null ? i : -1).filter(i => i>=0);
+    if (emptyIdxs.length === 0) { setStatus('Stalemate!'); this.gameOver = true; return; }
+    let bestScore = -Infinity, bestMove = emptyIdxs[0];
+    for (const i of emptyIdxs) {
+      let score = 0;
+      for (const ni of this.neighbors(i)) { const t=this.grid[ni]; if(t&&t.token==='X'){score+=2;if(t.hp<=1)score+=5;} }
+      const orig = this.grid[i];
+      this.grid[i] = {token:'O', hp: this.MAX_HP};
+      for (const [a,b,c] of LINES) {
+        const line=[this.grid[a],this.grid[b],this.grid[c]];
+        const oc=line.filter(t=>t&&t.token==='O').length, emp=line.filter(t=>!t).length;
+        if(oc===2&&emp===1)score+=15; if(oc===3)score+=50;
+      }
+      this.grid[i]={token:'X',hp:this.MAX_HP};
+      for (const [a,b,c] of LINES) { const line=[this.grid[a],this.grid[b],this.grid[c]]; if(line.filter(t=>t&&t.token==='X').length===3)score+=20; }
+      this.grid[i]=orig;
+      if(i===4)score+=3;
+      score+=Math.random()*2;
+      if(score>bestScore){bestScore=score;bestMove=i;}
+    }
+    const killed = this.placeToken(bestMove, 'O');
+    const shakeSet = new Set();
+    for (const ni of this.neighbors(bestMove)) { if(this.grid[ni]&&this.grid[ni].token!=='O') shakeSet.add(ni); }
+    this.render(shakeSet, new Set(killed));
+    setTimeout(() => {
+      this.removeKilled(killed);
+      this.render();
+      if (this.checkWin('O')) { setStatus('AI wins the battle!'); this.gameOver = true; scores.O++; updateScores(); this.render(); return; }
+      if (this.isBattleFull()) { setStatus('Stalemate!'); this.gameOver = true; return; }
+      this.humanTurn = true;
+      setStatus('Your move (place X to attack!)');
+    }, 400);
+  }
+};
+
+// ============================================================
+//  3D CUBE MODE
+// ============================================================
+modes.cube = {
+  grid: null, // 54 cells: 6 faces x 9
+  gameOver: false, humanTurn: true,
+  rotX: -20, rotY: -30, dragging: false, lastMX: 0, lastMY: 0,
+  LINES_CUBE: null, _onMouseMove: null, _onMouseUp: null,
+
+  buildLines() {
+    const lines = [];
+    // 8 win lines per face (3 rows + 3 cols + 2 diags) × 6 faces = 48 lines
+    for (let f = 0; f < 6; f++) {
+      const o = f * 9;
+      for (let r = 0; r < 3; r++) lines.push([o+r*3, o+r*3+1, o+r*3+2]);
+      for (let c = 0; c < 3; c++) lines.push([o+c, o+3+c, o+6+c]);
+      lines.push([o, o+4, o+8]);
+      lines.push([o+2, o+4, o+6]);
+    }
+    this.LINES_CUBE = lines;
+  },
+
+  init() {
+    if (!this.LINES_CUBE) this.buildLines();
+    this.grid = Array(54).fill('');
+    this.gameOver = false;
+    this.humanTurn = true;
+    this.rotX = -20; this.rotY = -30;
+    hasCelebrated = false;
+    setStatus('Click a cell on the cube');
+    this.render();
+  },
+
+  checkWin(token) { return this.LINES_CUBE.some(([a,b,c]) => this.grid[a]===token && this.grid[b]===token && this.grid[c]===token); },
+  getWinCells() {
+    const s = new Set();
+    for (const [a,b,c] of this.LINES_CUBE) { if (this.grid[a] && this.grid[a]===this.grid[b] && this.grid[b]===this.grid[c]) { s.add(a);s.add(b);s.add(c); } }
+    return s;
+  },
+
+  render() {
+    gameArea.innerHTML = '';
+    const container = document.createElement('div');
+    container.id = 'cube-container';
+    const scene = document.createElement('div');
+    scene.id = 'cube-scene';
+    scene.style.transform = `rotateX(${this.rotX}deg) rotateY(${this.rotY}deg)`;
+    scene.style.transformStyle = 'preserve-3d';
+    const wc = this.getWinCells();
+
+    // 6 faces of the cube, each a 3x3 grid
+    const half = 91;
+    const faceTransforms = [
+      `translateZ(${half}px)`,                      // Front
+      `translateZ(${-half}px) rotateY(180deg)`,     // Back
+      `translateX(${-half}px) rotateY(-90deg)`,     // Left
+      `translateX(${half}px) rotateY(90deg)`,       // Right
+      `translateY(${-half}px) rotateX(90deg)`,      // Top
+      `translateY(${half}px) rotateX(-90deg)`,      // Bottom
+    ];
+
+    for (let f = 0; f < 6; f++) {
+      const face = document.createElement('div');
+      face.className = 'cube-face';
+      face.style.transform = faceTransforms[f];
+      for (let i = 0; i < 9; i++) {
+        const idx = f * 9 + i;
+        const cell = document.createElement('div');
+        cell.className = 'cube-cell';
+        if (this.grid[idx]) { cell.textContent = this.grid[idx]; cell.classList.add(this.grid[idx].toLowerCase(), 'taken'); }
+        if (wc.has(idx)) cell.classList.add('win');
+        cell.addEventListener('click', (e) => { e.stopPropagation(); this.click(idx); });
+        face.appendChild(cell);
+      }
+      scene.appendChild(face);
+    }
+
+    container.appendChild(scene);
+    gameArea.appendChild(container);
+    if (wc.size > 0) celebrate();
+
+    // Drag to rotate
+    container.addEventListener('mousedown', (e) => { this.dragging = true; this.lastMX = e.clientX; this.lastMY = e.clientY; });
+    if (this._onMouseMove) { window.removeEventListener('mousemove', this._onMouseMove); window.removeEventListener('mouseup', this._onMouseUp); }
+    this._onMouseMove = (e) => {
+      if (!this.dragging) return;
+      this.rotY += (e.clientX - this.lastMX) * 0.5;
+      this.rotX -= (e.clientY - this.lastMY) * 0.5;
+      this.lastMX = e.clientX; this.lastMY = e.clientY;
+      const sc = document.getElementById('cube-scene');
+      if (sc) sc.style.transform = `rotateX(${this.rotX}deg) rotateY(${this.rotY}deg)`;
+    };
+    this._onMouseUp = () => { this.dragging = false; };
+    window.addEventListener('mousemove', this._onMouseMove);
+    window.addEventListener('mouseup', this._onMouseUp);
+  },
+
+  click(idx) {
+    if (this.gameOver || !this.humanTurn || this.grid[idx]) return;
+    this.grid[idx] = 'X';
+    this.humanTurn = false;
+    this.render();
+    if (this.checkWin('X')) { setStatus('You win!'); this.gameOver = true; scores.X++; updateScores(); this.render(); return; }
+    if (this.grid.every(c=>c!=='')) { setStatus('Draw!'); this.gameOver = true; return; }
+    setStatus('AI thinking...');
+    setTimeout(() => this.ai(), 300);
+  },
+
+  ai() {
+    const emp = this.grid.map((v,i)=>v===''?i:-1).filter(i=>i>=0);
+    let bestScore = -Infinity, bestMove = emp[0];
+    for (const i of emp) {
+      let score = 0;
+      this.grid[i]='O'; if(this.checkWin('O'))score+=1000; this.grid[i]='';
+      this.grid[i]='X'; if(this.checkWin('X'))score+=500; this.grid[i]='';
+      for (const line of this.LINES_CUBE) {
+        if(!line.includes(i))continue;
+        const vals=line.map(j=>this.grid[j]);
+        const oC=vals.filter(v=>v==='O').length, xC=vals.filter(v=>v==='X').length;
+        if(xC===0) score+=oC*4;
+        if(oC===0) score+=xC*2;
+      }
+      if (i % 9 === 4) score += 8; // face centers
+      if ([0,2,6,8].includes(i % 9)) score += 3; // face corners
+      score+=Math.random()*2;
+      if(score>bestScore){bestScore=score;bestMove=i;}
+    }
+    this.grid[bestMove] = 'O';
+    this.render();
+    if (this.checkWin('O')) { setStatus('AI wins!'); this.gameOver = true; scores.O++; updateScores(); this.render(); return; }
+    if (this.grid.every(c=>c!=='')) { setStatus('Draw!'); this.gameOver = true; return; }
+    this.humanTurn = true;
+    setStatus('Click a cell on the cube');
+  }
+};
+
+// ============================================================
+//  BOOT
+// ============================================================
+startMode();
 </script>
 </body>
 </html>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic Tac Toe — AI Arena</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    background: #0a0a0a;
+    color: #e0e0e0;
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 400;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 1.4rem;
+    color: #888;
+  }
+
+  /* AI Selector */
+  #ai-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    max-width: 600px;
+    margin-bottom: 0.6rem;
+  }
+
+  .ai-btn {
+    padding: 0.35rem 0.7rem;
+    font-family: inherit;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    background: #151515;
+    border: 1px solid #2a2a2a;
+    color: #777;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .ai-btn:hover {
+    border-color: #555;
+    color: #bbb;
+  }
+
+  .ai-btn.active {
+    border-color: #7eb8da;
+    color: #7eb8da;
+    background: #111a22;
+  }
+
+  #ai-desc {
+    font-size: 0.75rem;
+    color: #666;
+    margin-bottom: 1.6rem;
+    height: 1.2em;
+    text-align: center;
+    letter-spacing: 0.03em;
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    background: #333;
+    padding: 4px;
+    border-radius: 8px;
+  }
+
+  .cell {
+    width: 110px;
+    height: 110px;
+    background: #151515;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8rem;
+    font-weight: 300;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+    border-radius: 4px;
+  }
+
+  .cell:hover:not(.taken) {
+    background: #1e1e1e;
+  }
+
+  .cell.taken { cursor: default; }
+  .cell.x { color: #7eb8da; }
+  .cell.o { color: #da7e7e; }
+
+  .cell.win { background: #1a2a1a; }
+  .cell.win.x { color: #a0e0ff; }
+  .cell.win.o { color: #ffa0a0; }
+
+  #status {
+    margin-top: 2rem;
+    font-size: 1.1rem;
+    height: 1.5em;
+    color: #aaa;
+    letter-spacing: 0.05em;
+  }
+
+  #restart {
+    margin-top: 1.2rem;
+    padding: 0.5rem 1.6rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid #444;
+    color: #aaa;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  #restart:hover {
+    border-color: #888;
+    color: #e0e0e0;
+  }
+</style>
+</head>
+<body>
+
+<h1>Tic Tac Toe</h1>
+
+<div id="ai-selector"></div>
+<div id="ai-desc"></div>
+
+<div id="board"></div>
+<div id="status">Your move</div>
+<button id="restart">New Game</button>
+
+<script>
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+const restartBtn = document.getElementById('restart');
+const selectorEl = document.getElementById('ai-selector');
+const descEl = document.getElementById('ai-desc');
+
+let grid, gameOver, humanTurn, lastHumanMove;
+let currentAI = 'minimax';
+
+const LINES = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+// ── AI Strategies ──
+
+const AI_LIST = [
+  { id: 'minimax',  name: 'Minimax',   desc: 'Unbeatable. Full game-tree search. You cannot win.' },
+  { id: 'random',   name: 'Random',    desc: 'Picks a random legal move every time. Easy to beat.' },
+  { id: 'aggro',    name: 'Aggressive', desc: 'Hunts for wins but forgets to block you.' },
+  { id: 'defense',  name: 'Defensive',  desc: 'Blocks every threat but never sets up its own attack.' },
+  { id: 'mcts',     name: 'MCTS',       desc: 'Monte Carlo Tree Search (1000 playouts). Strong but occasionally beatable.' },
+  { id: 'neural',   name: 'Neural Net', desc: 'Simulated weight-based evaluation. Medium difficulty.' },
+  { id: 'chaos',    name: 'Chaos',      desc: '70% random, 30% perfect. Completely unpredictable.' },
+  { id: 'mirror',   name: 'Mirror',     desc: 'Copies your moves with symmetry. Falls back to random.' },
+];
+
+// Build selector buttons
+AI_LIST.forEach(ai => {
+  const btn = document.createElement('button');
+  btn.className = 'ai-btn' + (ai.id === currentAI ? ' active' : '');
+  btn.textContent = ai.name;
+  btn.dataset.id = ai.id;
+  btn.addEventListener('click', () => {
+    currentAI = ai.id;
+    document.querySelectorAll('.ai-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    descEl.textContent = ai.desc;
+    init();
+  });
+  selectorEl.appendChild(btn);
+});
+descEl.textContent = AI_LIST[0].desc;
+
+// ── Helpers ──
+
+function empty() { return grid.map((v,i) => v === '' ? i : -1).filter(i => i >= 0); }
+function isFull() { return grid.every(c => c !== ''); }
+function checkWinner(t) { return LINES.some(([a,b,c]) => grid[a]===t && grid[b]===t && grid[c]===t); }
+function getWinCells() {
+  const s = new Set();
+  for (const [a,b,c] of LINES) if (grid[a] && grid[a]===grid[b] && grid[b]===grid[c]) { s.add(a); s.add(b); s.add(c); }
+  return s;
+}
+
+// ── Minimax core ──
+
+function minimax(isMax) {
+  if (checkWinner('O')) return 1;
+  if (checkWinner('X')) return -1;
+  if (isFull()) return 0;
+  const e = empty();
+  if (isMax) {
+    let b = -2;
+    for (const i of e) { grid[i]='O'; b=Math.max(b,minimax(false)); grid[i]=''; }
+    return b;
+  } else {
+    let b = 2;
+    for (const i of e) { grid[i]='X'; b=Math.min(b,minimax(true)); grid[i]=''; }
+    return b;
+  }
+}
+
+function bestMinimax() {
+  const e = empty(); let bs=-2, bm=e[0];
+  for (const i of e) { grid[i]='O'; const s=minimax(false); grid[i]=''; if(s>bs){bs=s;bm=i;} }
+  return bm;
+}
+
+// ── AI implementations ──
+
+function aiRandom() { const e=empty(); return e[Math.floor(Math.random()*e.length)]; }
+
+function aiAggressive() {
+  const e = empty();
+  // Win?
+  for (const i of e) { grid[i]='O'; if(checkWinner('O')){grid[i]='';return i;} grid[i]=''; }
+  // Set up 2-in-a-row (no blocking)
+  let best=-1, bs=-1;
+  for (const i of e) {
+    grid[i]='O';
+    let sc=0;
+    for (const [a,b,c] of LINES) {
+      const v=[grid[a],grid[b],grid[c]];
+      if(v.filter(x=>x==='O').length===2 && v.filter(x=>x==='').length===1) sc++;
+    }
+    grid[i]='';
+    if(sc>bs){bs=sc;best=i;}
+  }
+  if(best>=0 && bs>0) return best;
+  return aiRandom();
+}
+
+function aiDefensive() {
+  const e = empty();
+  // Win if free
+  for (const i of e) { grid[i]='O'; if(checkWinner('O')){grid[i]='';return i;} grid[i]=''; }
+  // Block
+  for (const i of e) { grid[i]='X'; if(checkWinner('X')){grid[i]='';return i;} grid[i]=''; }
+  return aiRandom();
+}
+
+function aiMCTS(N) {
+  N = N || 1000;
+  const e = empty();
+  let bm=e[0], bs=-Infinity;
+  for (const i of e) {
+    grid[i]='O';
+    if (checkWinner('O')) { grid[i]=''; return i; }
+    let wins=0;
+    for (let p=0;p<N;p++) {
+      const sim = grid.slice();
+      let player='X';
+      let done=false;
+      while(!done) {
+        const se = sim.map((v,j)=>v===''?j:-1).filter(j=>j>=0);
+        if(!se.length){done=true;break;}
+        const m=se[Math.floor(Math.random()*se.length)];
+        sim[m]=player;
+        if(LINES.some(([a,b,c])=>sim[a]===player&&sim[b]===player&&sim[c]===player)) {
+          wins += player==='O' ? 1 : -1;
+          done=true; break;
+        }
+        player = player==='O'?'X':'O';
+      }
+    }
+    grid[i]='';
+    if(wins>bs){bs=wins;bm=i;}
+  }
+  return bm;
+}
+
+function aiNeural() {
+  const e = empty();
+  const posW = [3,2,3, 2,4,2, 3,2,3]; // corners 3, edges 2, center 4
+  let bm=e[0], bs=-Infinity;
+  for (const i of e) {
+    grid[i]='O';
+    if (checkWinner('O')) { grid[i]=''; return i; }
+    let sc=0;
+    for (let j=0;j<9;j++) {
+      if(grid[j]==='O') sc+=posW[j];
+      else if(grid[j]==='X') sc-=posW[j];
+    }
+    for (const [a,b,c] of LINES) {
+      const v=[grid[a],grid[b],grid[c]];
+      const oc=v.filter(x=>x==='O').length, xc=v.filter(x=>x==='X').length;
+      if(xc===0){ if(oc===2) sc+=10; else if(oc===1) sc+=1; }
+      if(oc===0){ if(xc===2) sc-=8; else if(xc===1) sc-=0.5; }
+    }
+    sc += (Math.random()-0.5);
+    grid[i]='';
+    if(sc>bs){bs=sc;bm=i;}
+  }
+  return bm;
+}
+
+function aiChaos() { return Math.random()<0.3 ? bestMinimax() : aiRandom(); }
+
+function aiMirror() {
+  const e = empty();
+  if (lastHumanMove !== null) {
+    const r = Math.floor(lastHumanMove/3), c = lastHumanMove%3;
+    const transforms = [
+      (2-r)*3+(2-c),     // 180
+      c*3+r,             // diagonal
+      (2-c)*3+(2-r),     // anti-diagonal
+      r*3+(2-c),         // horizontal
+      (2-r)*3+c,         // vertical
+    ];
+    for (const t of transforms) {
+      if (e.includes(t)) return t;
+    }
+  }
+  return aiRandom();
+}
+
+function aiMove() {
+  switch(currentAI) {
+    case 'minimax': return bestMinimax();
+    case 'random':  return aiRandom();
+    case 'aggro':   return aiAggressive();
+    case 'defense': return aiDefensive();
+    case 'mcts':    return aiMCTS(1000);
+    case 'neural':  return aiNeural();
+    case 'chaos':   return aiChaos();
+    case 'mirror':  return aiMirror();
+    default:        return bestMinimax();
+  }
+}
+
+// ── Game logic ──
+
+function init() {
+  grid = ['','','','','','','','',''];
+  gameOver = false;
+  humanTurn = true;
+  lastHumanMove = null;
+  statusEl.textContent = 'Your move';
+  render();
+}
+
+function render() {
+  boardEl.innerHTML = '';
+  const wc = getWinCells();
+  for (let i=0;i<9;i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    if (grid[i]) { cell.textContent=grid[i]; cell.classList.add(grid[i].toLowerCase(),'taken'); }
+    if (wc.has(i)) cell.classList.add('win');
+    cell.addEventListener('click', () => handleClick(i));
+    boardEl.appendChild(cell);
+  }
+}
+
+function handleClick(i) {
+  if (gameOver || !humanTurn || grid[i]) return;
+  grid[i] = 'X';
+  lastHumanMove = i;
+  humanTurn = false;
+  render();
+
+  if (checkWinner('X')) { statusEl.textContent='You win!'; gameOver=true; render(); return; }
+  if (isFull()) { statusEl.textContent="It's a draw!"; gameOver=true; return; }
+
+  statusEl.textContent = 'AI thinking...';
+  setTimeout(aiPlay, currentAI==='mcts' ? 50 : 200);
+}
+
+function aiPlay() {
+  const move = aiMove();
+  grid[move] = 'O';
+  render();
+
+  if (checkWinner('O')) { statusEl.textContent='AI wins!'; gameOver=true; render(); return; }
+  if (isFull()) { statusEl.textContent="It's a draw!"; gameOver=true; return; }
+
+  humanTurn = true;
+  statusEl.textContent = 'Your move';
+}
+
+restartBtn.addEventListener('click', init);
+init();
+</script>
+</body>
+</html>

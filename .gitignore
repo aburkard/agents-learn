@@ -1,1 +1,4 @@
 __pycache__/
+.playwright-cli/
+.playwright-mcp/
+.claude/

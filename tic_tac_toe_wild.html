@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic Tac Toe — Wild Edition</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 2rem;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    background: #0a0a0a;
+    color: #e0e0e0;
+    overflow-x: hidden;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 400;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    color: #888;
+  }
+
+  /* ---- Mode Selector ---- */
+  #mode-selector {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border: 1px solid #333;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 700px;
+  }
+
+  .mode-btn {
+    padding: 0.5rem 1rem;
+    font-family: inherit;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: #111;
+    border: none;
+    border-right: 1px solid #333;
+    color: #777;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+
+  .mode-btn:last-child { border-right: none; }
+  .mode-btn:hover { background: #1a1a1a; color: #ccc; }
+  .mode-btn.active { background: #1e1e2e; color: #e0e0e0; border-bottom: 2px solid #7eb8da; }
+
+  /* ---- Help ---- */
+  #help-box {
+    max-width: 500px;
+    margin-bottom: 1.5rem;
+    padding: 0.8rem 1.2rem;
+    background: #111;
+    border: 1px solid #282828;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: #999;
+    display: none;
+  }
+  #help-box.visible { display: block; }
+  #help-box strong { color: #bbb; }
+
+  /* ---- Game Area ---- */
+  #game-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ---- Standard Board ---- */
+  .board-3x3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    background: #333;
+    padding: 4px;
+    border-radius: 8px;
+  }
+
+  .cell {
+    width: 110px;
+    height: 110px;
+    background: #151515;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8rem;
+    font-weight: 300;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+    border-radius: 4px;
+    position: relative;
+  }
+
+  .cell:hover:not(.taken) { background: #1e1e1e; }
+  .cell.taken { cursor: default; }
+  .cell.x { color: #7eb8da; }
+  .cell.o { color: #da7e7e; }
+  .cell.win { background: #1a2a1a; }
+  .cell.win.x { color: #a0e0ff; }
+  .cell.win.o { color: #ffa0a0; }
+
+  /* ---- Status ---- */
+  #status {
+    margin-top: 1.5rem;
+    font-size: 1.1rem;
+    min-height: 1.5em;
+    color: #aaa;
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+
+  #restart {
+    margin-top: 1rem;
+    padding: 0.5rem 1.6rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid #444;
+    color: #aaa;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  #restart:hover { border-color: #888; color: #e0e0e0; }
+
+  #help-toggle {
+    margin-top: 0.6rem;
+    padding: 0.3rem 1rem;
+    font-family: inherit;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid #333;
+    color: #666;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  #help-toggle:hover { border-color: #666; color: #aaa; }
+
+  /* ==== ULTIMATE BOARD ==== */
+  .ultimate-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    background: #222;
+    padding: 8px;
+    border-radius: 10px;
+  }
+  .ultimate-sub {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: #333;
+    padding: 3px;
+    border-radius: 6px;
+    position: relative;
+    transition: box-shadow 0.2s, opacity 0.2s;
+  }
+  .ultimate-sub.active-sub {
+    box-shadow: 0 0 0 2px #7eb8da88;
+  }
+  .ultimate-sub.won-x {
+    opacity: 0.7;
+  }
+  .ultimate-sub.won-o {
+    opacity: 0.7;
+  }
+  .ultimate-sub .sub-winner-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: 700;
+    z-index: 2;
+    border-radius: 6px;
+    pointer-events: none;
+  }
+  .ultimate-sub .sub-winner-overlay.x-overlay {
+    background: rgba(126, 184, 218, 0.12);
+    color: #7eb8da;
+  }
+  .ultimate-sub .sub-winner-overlay.o-overlay {
+    background: rgba(218, 126, 126, 0.12);
+    color: #da7e7e;
+  }
+  .ultimate-sub .sub-winner-overlay.draw-overlay {
+    background: rgba(150, 150, 150, 0.1);
+    color: #666;
+    font-size: 1.5rem;
+  }
+
+  .ucell {
+    width: 36px;
+    height: 36px;
+    background: #151515;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 400;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 2px;
+    transition: background 0.1s;
+  }
+  .ucell:hover:not(.taken) { background: #1e1e1e; }
+  .ucell.taken { cursor: default; }
+  .ucell.x { color: #7eb8da; }
+  .ucell.o { color: #da7e7e; }
+
+  /* ==== DRUNK MODE ==== */
+  @keyframes wobble {
+    0%   { transform: rotate(0deg) translateX(0); }
+    25%  { transform: rotate(1.5deg) translateX(3px); }
+    50%  { transform: rotate(-1deg) translateY(2px); }
+    75%  { transform: rotate(1deg) translateX(-2px); }
+    100% { transform: rotate(0deg) translateX(0); }
+  }
+  @keyframes cell-drift {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    33%  { transform: translate(4px, -3px) rotate(2deg); }
+    66%  { transform: translate(-3px, 2px) rotate(-1.5deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+  }
+  @keyframes hiccup {
+    0%, 90%, 100% { transform: scale(1); }
+    95% { transform: scale(1.08) rotate(3deg); }
+  }
+  .drunk-board {
+    animation: wobble 3s ease-in-out infinite;
+  }
+  .drunk-board .cell {
+    animation: cell-drift 4s ease-in-out infinite;
+    animation-delay: var(--drift-delay, 0s);
+  }
+  .drunk-hiccup {
+    animation: hiccup 2s ease-in-out;
+  }
+  .drunk-flash {
+    animation: drunk-flash-anim 0.4s ease-out;
+  }
+  @keyframes drunk-flash-anim {
+    0% { background: #2a1a1a; }
+    100% { background: #151515; }
+  }
+  .typo-text {
+    transition: opacity 0.2s;
+  }
+
+  /* ==== GRAVITY MODE ==== */
+  @keyframes token-fall {
+    0% { transform: translateY(-200px); opacity: 0.5; }
+    70% { transform: translateY(8px); opacity: 1; }
+    85% { transform: translateY(-3px); }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .gravity-fall {
+    animation: token-fall 0.4s ease-out;
+  }
+  .cell.gravity-target:not(.taken) {
+    background: #1a1a22;
+  }
+
+  /* ==== BATTLE MODE ==== */
+  .cell .hp-bar {
+    position: absolute;
+    bottom: 4px;
+    left: 10%;
+    width: 80%;
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .cell .hp-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+  .cell .hp-fill.hp-x { background: #7eb8da; }
+  .cell .hp-fill.hp-o { background: #da7e7e; }
+  .cell .hp-text {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-size: 0.55rem;
+    color: #555;
+  }
+  @keyframes damage-shake {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-3px, 2px); }
+    40% { transform: translate(3px, -2px); }
+    60% { transform: translate(-2px, -1px); }
+    80% { transform: translate(2px, 1px); }
+  }
+  .cell.damage-shake {
+    animation: damage-shake 0.3s ease-out;
+  }
+  @keyframes death-fade {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.3) rotate(45deg); }
+  }
+  .cell.death-anim {
+    animation: death-fade 0.4s ease-out forwards;
+  }
+
+  /* ==== 3D MODE ==== */
+  #cube-container {
+    width: 350px;
+    height: 350px;
+    perspective: 800px;
+    cursor: grab;
+  }
+  #cube-container:active { cursor: grabbing; }
+  #cube-scene {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.1s linear;
+  }
+  .cube-layer {
+    position: absolute;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    padding: 4px;
+    width: 160px;
+    height: 160px;
+    transform-style: preserve-3d;
+    background: rgba(50, 50, 50, 0.25);
+    border-radius: 6px;
+    border: 1px solid #333;
+  }
+  .cube-cell {
+    width: 48px;
+    height: 48px;
+    background: rgba(21, 21, 21, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 400;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 3px;
+    border: 1px solid #2a2a2a;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .cube-cell:hover:not(.taken) {
+    background: rgba(40, 40, 50, 0.9);
+    border-color: #555;
+  }
+  .cube-cell.taken { cursor: default; }
+  .cube-cell.x { color: #7eb8da; border-color: #7eb8da44; }
+  .cube-cell.o { color: #da7e7e; border-color: #da7e7e44; }
+  .cube-cell.win { background: rgba(26, 42, 26, 0.9); }
+  .cube-cell.win.x { color: #a0e0ff; }
+  .cube-cell.win.o { color: #ffa0a0; }
+  .layer-label {
+    position: absolute;
+    top: -20px;
+    left: 0;
+    font-size: 0.65rem;
+    color: #555;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Scores */
+  #score-area {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: #666;
+  }
+  .score-x { color: #7eb8da; }
+  .score-o { color: #da7e7e; }
+</style>
+</head>
+<body>
+
+<h1>Tic Tac Toe — Wild Edition</h1>
+
+<div id="mode-selector">
+  <button class="mode-btn active" data-mode="normal">Normal</button>
+  <button class="mode-btn" data-mode="ultimate">Ultimate</button>
+  <button class="mode-btn" data-mode="drunk">Drunk</button>
+  <button class="mode-btn" data-mode="gravity">Gravity</button>
+  <button class="mode-btn" data-mode="battle">Battle</button>
+  <button class="mode-btn" data-mode="cube">3D Cube</button>
+</div>
+
+<div id="help-box"></div>
+
+<div id="score-area">
+  <span>X (You): <span class="score-x" id="score-x">0</span></span>
+  <span>O (AI): <span class="score-o" id="score-o">0</span></span>
+</div>
+
+<div id="game-area"></div>
+<div id="status">Your move</div>
+<button id="restart">New Game</button>
+<button id="help-toggle">Rules</button>
+
+<script>
+// ============================================================
+//  GLOBALS
+// ============================================================
+const gameArea = document.getElementById('game-area');
+const statusEl = document.getElementById('status');
+const restartBtn = document.getElementById('restart');
+const helpBox = document.getElementById('help-box');
+const helpToggle = document.getElementById('help-toggle');
+const scoreXEl = document.getElementById('score-x');
+const scoreOEl = document.getElementById('score-o');
+
+let currentMode = 'normal';
+let scores = { X: 0, O: 0 };
+
+const LINES = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+const HELP_TEXT = {
+  normal: `<strong>Normal Tic-Tac-Toe.</strong> You are X, AI is O. The AI uses minimax and plays perfectly. Try to draw.`,
+  ultimate: `<strong>Ultimate Tic-Tac-Toe.</strong> The board is a 3x3 grid of smaller 3x3 boards. Win a small board to claim that meta-cell. <em>Your move determines which sub-board your opponent must play in next</em> (the sub-board matching the cell position you chose). If that board is already won or full, the opponent may play anywhere. First to claim 3 meta-cells in a row wins the whole game. The highlighted board(s) show where you can play.`,
+  drunk: `<strong>Drunk Mode.</strong> The board wobbles. Cells drift around. Tokens briefly flash in wrong positions. Status messages have typos that auto-correct. The game logic is identical to normal — but good luck keeping track. The AI is also "drunk" and occasionally makes a suboptimal move.`,
+  gravity: `<strong>Gravity Mode.</strong> Like Connect 4 meets Tic-Tac-Toe. Tokens fall to the lowest empty cell in each column. You pick a column, the token drops. 3 in a row in any direction wins. The AI uses minimax.`,
+  battle: `<strong>Battle Mode.</strong> Each token is placed with 3 HP. Placing a token next to enemy tokens deals 1 damage to each adjacent enemy. If a token reaches 0 HP it is destroyed and removed from the board. Winning conditions are the same — 3 in a row. But the board is constantly shifting as tokens die. AI uses a heuristic strategy.`,
+  cube: `<strong>3D Tic-Tac-Toe.</strong> Play on a 3x3x3 cube. Win by getting 3 in a row in any direction — horizontal, vertical, or any of the 3D diagonals (there are 49 possible winning lines). Drag to rotate the cube. Click a cell to place your token. AI uses heuristic evaluation.`,
+};
+
+// ============================================================
+//  MODE SELECTOR
+// ============================================================
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    scores = { X: 0, O: 0 };
+    updateScores();
+    helpBox.classList.remove('visible');
+    startMode();
+  });
+});
+
+helpToggle.addEventListener('click', () => {
+  helpBox.innerHTML = HELP_TEXT[currentMode] || '';
+  helpBox.classList.toggle('visible');
+});
+
+restartBtn.addEventListener('click', () => startMode());
+
+function updateScores() {
+  scoreXEl.textContent = scores.X;
+  scoreOEl.textContent = scores.O;
+}
+
+function startMode() {
+  gameArea.innerHTML = '';
+  statusEl.textContent = 'Your move';
+  const m = modes[currentMode];
+  if (m) m.init();
+}
+
+// ============================================================
+//  SHARED MINIMAX FOR 3x3
+// ============================================================
+function minimax3x3(grid, isMax) {
+  if (check3x3(grid, 'O')) return 1;
+  if (check3x3(grid, 'X')) return -1;
+  if (grid.every(c => c !== '')) return 0;
+  const empty = grid.map((v, i) => v === '' ? i : -1).filter(i => i >= 0);
+  if (isMax) {
+    let best = -2;
+    for (const i of empty) { grid[i] = 'O'; best = Math.max(best, minimax3x3(grid, false)); grid[i] = ''; }
+    return best;
+  } else {
+    let best = 2;
+    for (const i of empty) { grid[i] = 'X'; best = Math.min(best, minimax3x3(grid, true)); grid[i] = ''; }
+    return best;
+  }
+}
+function check3x3(g, t) { return LINES.some(([a,b,c]) => g[a]===t && g[b]===t && g[c]===t); }
+function getWinCells3x3(g) {
+  const s = new Set();
+  for (const [a,b,c] of LINES) { if (g[a] && g[a]===g[b] && g[b]===g[c]) { s.add(a); s.add(b); s.add(c); } }
+  return s;
+}
+function bestMove3x3(grid) {
+  const empty = grid.map((v,i) => v==='' ? i : -1).filter(i => i>=0);
+  let bs = -2, bm = empty[0];
+  for (const i of empty) { grid[i]='O'; const s=minimax3x3(grid,false); grid[i]=''; if(s>bs){bs=s;bm=i;} }
+  return bm;
+}
+
+// ============================================================
+//  NORMAL MODE
+// ============================================================
+const modes = {};
+
+modes.normal = {
+  grid: null, gameOver: false, humanTurn: true,
+  init() {
+    this.grid = Array(9).fill('');
+    this.gameOver = false;
+    this.humanTurn = true;
+    statusEl.textContent = 'Your move';
+    this.render();
+  },
+  render() {
+    gameArea.innerHTML = '';
+    const board = document.createElement('div');
+    board.className = 'board-3x3';
+    const wc = getWinCells3x3(this.grid);
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (this.grid[i]) { cell.textContent = this.grid[i]; cell.classList.add(this.grid[i].toLowerCase(), 'taken'); }
+      if (wc.has(i)) cell.classList.add('win');
+      cell.addEventListener('click', () => this.click(i));
+      board.appendChild(cell);
+    }
+    gameArea.appendChild(board);
+  },
+  click(i) {
+    if (this.gameOver || !this.humanTurn || this.grid[i]) return;
+    this.grid[i] = 'X';
+    this.humanTurn = false;
+    this.render();
+    if (check3x3(this.grid, 'X')) { statusEl.textContent = 'You win!'; this.gameOver = true; scores.X++; updateScores(); this.render(); return; }
+    if (this.grid.every(c=>c!=='')) { statusEl.textContent = "Draw!"; this.gameOver = true; return; }
+    statusEl.textContent = 'AI thinking...';
+    setTimeout(() => this.ai(), 250);
+  },
+  ai() {
+    const mv = bestMove3x3(this.grid);
+    this.grid[mv] = 'O';
+    this.render();
+    if (check3x3(this.grid, 'O')) { statusEl.textContent = 'AI wins!'; this.gameOver = true; scores.O++; updateScores(); this.render(); return; }
+    if (this.grid.every(c=>c!=='')) { statusEl.textContent = "Draw!"; this.gameOver = true; return; }
+    this.humanTurn = true;
+    statusEl.textContent = 'Your move';
+  }
+};
+
+// ============================================================
+//  ULTIMATE TIC-TAC-TOE
+// ============================================================
+modes.ultimate = {
+  boards: null, // 9 arrays of 9
+  metaBoard: null, // 9 strings
+  activeBoard: null, // 0-8 or null (any)
+  gameOver: false,
+  humanTurn: true,
+  currentPlayer: 'X',
+
+  init() {
+    this.boards = Array.from({length:9}, () => Array(9).fill(''));
+    this.metaBoard = Array(9).fill('');
+    this.activeBoard = null;
+    this.gameOver = false;
+    this.humanTurn = true;
+    this.currentPlayer = 'X';
+    statusEl.textContent = 'Your move (play anywhere)';
+    this.render();
+  },
+
+  checkSubWinner(boardIdx) {
+    const b = this.boards[boardIdx];
+    for (const [a,c2,c3] of LINES) {
+      if (b[a] && b[a]===b[c2] && b[c2]===b[c3]) return b[a];
+    }
+    return null;
+  },
+
+  isSubFull(boardIdx) {
+    return this.boards[boardIdx].every(c => c !== '');
+  },
+
+  render() {
+    gameArea.innerHTML = '';
+    const container = document.createElement('div');
+    container.className = 'ultimate-board';
+
+    for (let bi = 0; bi < 9; bi++) {
+      const sub = document.createElement('div');
+      sub.className = 'ultimate-sub';
+
+      const winner = this.metaBoard[bi];
+      const subFull = this.isSubFull(bi);
+      const canPlay = !this.gameOver && this.humanTurn &&
+        (this.activeBoard === null || this.activeBoard === bi) &&
+        !winner && !subFull;
+
+      if (canPlay) sub.classList.add('active-sub');
+      if (winner === 'X') sub.classList.add('won-x');
+      if (winner === 'O') sub.classList.add('won-o');
+
+      if (winner || (subFull && !winner)) {
+        const ov = document.createElement('div');
+        ov.className = 'sub-winner-overlay';
+        if (winner === 'X') { ov.classList.add('x-overlay'); ov.textContent = 'X'; }
+        else if (winner === 'O') { ov.classList.add('o-overlay'); ov.textContent = 'O'; }
+        else { ov.classList.add('draw-overlay'); ov.textContent = '='; }
+        sub.appendChild(ov);
+      }
+
+      for (let ci = 0; ci < 9; ci++) {
+        const cell = document.createElement('div');
+        cell.className = 'ucell';
+        if (this.boards[bi][ci]) {
+          cell.textContent = this.boards[bi][ci];
+          cell.classList.add(this.boards[bi][ci].toLowerCase(), 'taken');
+        }
+        cell.addEventListener('click', () => this.click(bi, ci));
+        sub.appendChild(cell);
+      }
+      container.appendChild(sub);
+    }
+    gameArea.appendChild(container);
+  },
+
+  click(bi, ci) {
+    if (this.gameOver || !this.humanTurn) return;
+    if (this.activeBoard !== null && this.activeBoard !== bi) return;
+    if (this.metaBoard[bi] || this.isSubFull(bi)) return;
+    if (this.boards[bi][ci]) return;
+
+    this.boards[bi][ci] = 'X';
+    const w = this.checkSubWinner(bi);
+    if (w) this.metaBoard[bi] = w;
+
+    // check meta win
+    if (check3x3(this.metaBoard, 'X')) {
+      this.gameOver = true;
+      scores.X++; updateScores();
+      statusEl.textContent = 'You win the ultimate game!';
+      this.render(); return;
+    }
+    if (this.metaBoard.every(c => c !== '')) {
+      this.gameOver = true;
+      statusEl.textContent = 'Ultimate draw!';
+      this.render(); return;
+    }
+
+    // determine next active board
+    this.activeBoard = (this.metaBoard[ci] || this.isSubFull(ci)) ? null : ci;
+    this.humanTurn = false;
+    statusEl.textContent = 'AI thinking...';
+    this.render();
+    setTimeout(() => this.ai(), 300);
+  },
+
+  ai() {
+    // AI: simple heuristic — try to win sub-boards, block, or play center
+    let candidates = [];
+    if (this.activeBoard !== null) {
+      candidates = [{bi: this.activeBoard, cells: this.getEmptyCells(this.activeBoard)}];
+    } else {
+      for (let bi = 0; bi < 9; bi++) {
+        if (!this.metaBoard[bi] && !this.isSubFull(bi)) {
+          candidates.push({bi, cells: this.getEmptyCells(bi)});
+        }
+      }
+    }
+
+    let bestMove = null;
+    let bestScore = -Infinity;
+
+    for (const {bi, cells} of candidates) {
+      for (const ci of cells) {
+        let score = 0;
+        // can we win this sub-board?
+        this.boards[bi][ci] = 'O';
+        if (this.checkSubWinner(bi) === 'O') score += 100;
+        this.boards[bi][ci] = '';
+        // can opponent win if we don't play here?
+        this.boards[bi][ci] = 'X';
+        if (this.checkSubWinner(bi) === 'X') score += 80;
+        this.boards[bi][ci] = '';
+        // center sub-board and center cell bonus
+        if (bi === 4) score += 10;
+        if (ci === 4) score += 5;
+        // avoid sending opponent to a won/full board (gives them free choice)
+        const dest = ci;
+        if (this.metaBoard[dest] || this.isSubFull(dest)) score -= 15;
+        // can winning meta?
+        this.boards[bi][ci] = 'O';
+        const subW = this.checkSubWinner(bi);
+        if (subW === 'O') {
+          const oldMeta = this.metaBoard[bi];
+          this.metaBoard[bi] = 'O';
+          if (check3x3(this.metaBoard, 'O')) score += 1000;
+          this.metaBoard[bi] = oldMeta;
+        }
+        this.boards[bi][ci] = '';
+
+        score += Math.random() * 3; // tie-break
+        if (score > bestScore) { bestScore = score; bestMove = {bi, ci}; }
+      }
+    }
+
+    if (!bestMove) { this.gameOver = true; statusEl.textContent = 'Draw!'; this.render(); return; }
+
+    this.boards[bestMove.bi][bestMove.ci] = 'O';
+    const w = this.checkSubWinner(bestMove.bi);
+    if (w) this.metaBoard[bestMove.bi] = w;
+
+    if (check3x3(this.metaBoard, 'O')) {
+      this.gameOver = true;
+      scores.O++; updateScores();
+      statusEl.textContent = 'AI wins the ultimate game!';
+      this.render(); return;
+    }
+    if (this.metaBoard.every(c => c !== '')) {
+      this.gameOver = true;
+      statusEl.textContent = 'Ultimate draw!';
+      this.render(); return;
+    }
+
+    const nextBI = bestMove.ci;
+    this.activeBoard = (this.metaBoard[nextBI] || this.isSubFull(nextBI)) ? null : nextBI;
+    this.humanTurn = true;
+    statusEl.textContent = this.activeBoard === null ? 'Your move (play anywhere)' : `Your move (board ${this.activeBoard + 1})`;
+    this.render();
+  },
+
+  getEmptyCells(bi) {
+    return this.boards[bi].map((v,i) => v==='' ? i : -1).filter(i => i>=0);
+  }
+};
+
+// ============================================================
+//  DRUNK MODE
+// ============================================================
+modes.drunk = {
+  grid: null, gameOver: false, humanTurn: true,
+  typoTimeout: null,
+
+  init() {
+    this.grid = Array(9).fill('');
+    this.gameOver = false;
+    this.humanTurn = true;
+    statusEl.textContent = 'Yoour moev';
+    clearTimeout(this.typoTimeout);
+    this.typoTimeout = setTimeout(() => { statusEl.textContent = 'Your move'; }, 800);
+    this.render();
+  },
+
+  setDrunkStatus(correct) {
+    // Make a typo version then correct it
+    const typo = this.makeTypo(correct);
+    statusEl.textContent = typo;
+    clearTimeout(this.typoTimeout);
+    this.typoTimeout = setTimeout(() => { statusEl.textContent = correct; }, 700 + Math.random() * 600);
+  },
+
+  makeTypo(text) {
+    const arr = text.split('');
+    const swaps = 1 + Math.floor(Math.random() * 2);
+    for (let s = 0; s < swaps; s++) {
+      const i = Math.floor(Math.random() * (arr.length - 1));
+      if (arr[i] !== ' ' && arr[i+1] !== ' ') {
+        [arr[i], arr[i+1]] = [arr[i+1], arr[i]];
+      }
+    }
+    return arr.join('');
+  },
+
+  render() {
+    gameArea.innerHTML = '';
+    const board = document.createElement('div');
+    board.className = 'board-3x3 drunk-board';
+    const wc = getWinCells3x3(this.grid);
+
+    // shuffle visual positions but track real indices
+    const displayOrder = [0,1,2,3,4,5,6,7,8];
+    // cells occasionally show ghost tokens
+    for (let di = 0; di < 9; di++) {
+      const i = displayOrder[di];
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.style.setProperty('--drift-delay', (i * 0.4 + Math.random() * 0.5) + 's');
+
+      if (this.grid[i]) {
+        cell.textContent = this.grid[i];
+        cell.classList.add(this.grid[i].toLowerCase(), 'taken');
+      }
+      if (wc.has(i)) cell.classList.add('win');
+      cell.addEventListener('click', () => this.click(i));
+      board.appendChild(cell);
+    }
+    gameArea.appendChild(board);
+
+    // occasionally flash a ghost token in a random empty cell
+    if (!this.gameOver) {
+      setTimeout(() => {
+        const cells = board.querySelectorAll('.cell');
+        const empties = [];
+        for (let i = 0; i < 9; i++) if (!this.grid[i]) empties.push(i);
+        if (empties.length > 0) {
+          const ri = empties[Math.floor(Math.random() * empties.length)];
+          const ghostCell = cells[ri];
+          if (ghostCell) {
+            const ghost = Math.random() > 0.5 ? 'X' : 'O';
+            ghostCell.textContent = ghost;
+            ghostCell.style.opacity = '0.3';
+            ghostCell.classList.add('drunk-flash');
+            setTimeout(() => {
+              if (!this.grid[ri]) { ghostCell.textContent = ''; ghostCell.style.opacity = '1'; }
+            }, 350);
+          }
+        }
+      }, 800 + Math.random() * 1500);
+    }
+  },
+
+  click(i) {
+    if (this.gameOver || !this.humanTurn || this.grid[i]) return;
+    this.grid[i] = 'X';
+    this.humanTurn = false;
+    this.render();
+    // hiccup effect
+    const board = gameArea.querySelector('.board-3x3');
+    if (board) { board.classList.add('drunk-hiccup'); setTimeout(() => board.classList.remove('drunk-hiccup'), 2000); }
+
+    if (check3x3(this.grid, 'X')) { this.setDrunkStatus('You win! ...wait, really?'); this.gameOver = true; scores.X++; updateScores(); this.render(); return; }
+    if (this.grid.every(c=>c!=='')) { this.setDrunkStatus("It's a draw... I think"); this.gameOver = true; return; }
+    this.setDrunkStatus('AI thinkning...');
+    setTimeout(() => this.ai(), 400 + Math.random() * 400);
+  },
+
+  ai() {
+    // Drunk AI: 30% chance of random move
+    let mv;
+    if (Math.random() < 0.3) {
+      const empty = this.grid.map((v,i) => v==='' ? i : -1).filter(i => i>=0);
+      mv = empty[Math.floor(Math.random() * empty.length)];
+    } else {
+      mv = bestMove3x3(this.grid);
+    }
+    this.grid[mv] = 'O';
+    this.render();
+    if (check3x3(this.grid, 'O')) { this.setDrunkStatus('AI wins! *hic*'); this.gameOver = true; scores.O++; updateScores(); this.render(); return; }
+    if (this.grid.every(c=>c!=='')) { this.setDrunkStatus("Draw... prboably"); this.gameOver = true; return; }
+    this.humanTurn = true;
+    this.setDrunkStatus('Yuor moev');
+  }
+};
+
+// ============================================================
+//  GRAVITY MODE
+// ============================================================
+modes.gravity = {
+  grid: null, gameOver: false, humanTurn: true,
+
+  init() {
+    this.grid = Array(9).fill('');
+    this.gameOver = false;
+    this.humanTurn = true;
+    statusEl.textContent = 'Pick a column';
+    this.render();
+  },
+
+  getDropRow(col) {
+    // columns: col 0 = indices 0,3,6; col 1 = 1,4,7; col 2 = 2,5,8
+    // row 0 is top, row 2 is bottom
+    for (let row = 2; row >= 0; row--) {
+      if (this.grid[row * 3 + col] === '') return row;
+    }
+    return -1;
+  },
+
+  render() {
+    gameArea.innerHTML = '';
+    const board = document.createElement('div');
+    board.className = 'board-3x3';
+    const wc = getWinCells3x3(this.grid);
+
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const col = i % 3;
+
+      if (this.grid[i]) {
+        cell.textContent = this.grid[i];
+        cell.classList.add(this.grid[i].toLowerCase(), 'taken');
+      } else {
+        // highlight column targets
+        const dropRow = this.getDropRow(col);
+        if (dropRow >= 0 && i === dropRow * 3 + col) {
+          cell.classList.add('gravity-target');
+        }
+      }
+      if (wc.has(i)) cell.classList.add('win');
+      cell.addEventListener('click', () => this.click(col));
+      board.appendChild(cell);
+    }
+    gameArea.appendChild(board);
+  },
+
+  click(col) {
+    if (this.gameOver || !this.humanTurn) return;
+    const row = this.getDropRow(col);
+    if (row < 0) return;
+    const idx = row * 3 + col;
+    this.grid[idx] = 'X';
+    this.humanTurn = false;
+    this.render();
+
+    // animate
+    const cells = gameArea.querySelectorAll('.cell');
+    if (cells[idx]) cells[idx].classList.add('gravity-fall');
+
+    if (check3x3(this.grid, 'X')) { statusEl.textContent = 'You win!'; this.gameOver = true; scores.X++; updateScores(); this.render(); return; }
+    if (this.grid.every(c=>c!=='')) { statusEl.textContent = "Draw!"; this.gameOver = true; return; }
+    statusEl.textContent = 'AI thinking...';
+    setTimeout(() => this.ai(), 350);
+  },
+
+  ai() {
+    // minimax but moves are column-based
+    const mv = this.bestGravityMove();
+    const row = this.getDropRow(mv);
+    const idx = row * 3 + mv;
+    this.grid[idx] = 'O';
+    this.render();
+    const cells = gameArea.querySelectorAll('.cell');
+    if (cells[idx]) cells[idx].classList.add('gravity-fall');
+
+    if (check3x3(this.grid, 'O')) { statusEl.textContent = 'AI wins!'; this.gameOver = true; scores.O++; updateScores(); this.render(); return; }
+    if (this.grid.every(c=>c!=='')) { statusEl.textContent = "Draw!"; this.gameOver = true; return; }
+    this.humanTurn = true;
+    statusEl.textContent = 'Pick a column';
+  },
+
+  bestGravityMove() {
+    let bestScore = -2, bestCol = 0;
+    for (let col = 0; col < 3; col++) {
+      const row = this.getDropRow(col);
+      if (row < 0) continue;
+      const idx = row * 3 + col;
+      this.grid[idx] = 'O';
+      const s = this.gravMinimax(false, 6);
+      this.grid[idx] = '';
+      if (s > bestScore) { bestScore = s; bestCol = col; }
+    }
+    return bestCol;
+  },
+
+  gravMinimax(isMax, depth) {
+    if (check3x3(this.grid, 'O')) return 1;
+    if (check3x3(this.grid, 'X')) return -1;
+    if (this.grid.every(c=>c!=='') || depth <= 0) return 0;
+    if (isMax) {
+      let best = -2;
+      for (let col = 0; col < 3; col++) {
+        const row = this.getDropRow(col);
+        if (row < 0) continue;
+        const idx = row * 3 + col;
+        this.grid[idx] = 'O';
+        best = Math.max(best, this.gravMinimax(false, depth - 1));
+        this.grid[idx] = '';
+      }
+      return best;
+    } else {
+      let best = 2;
+      for (let col = 0; col < 3; col++) {
+        const row = this.getDropRow(col);
+        if (row < 0) continue;
+        const idx = row * 3 + col;
+        this.grid[idx] = 'X';
+        best = Math.min(best, this.gravMinimax(true, depth - 1));
+        this.grid[idx] = '';
+      }
+      return best;
+    }
+  }
+};
+
+// ============================================================
+//  BATTLE MODE
+// ============================================================
+modes.battle = {
+  grid: null, // '' or {token, hp}
+  gameOver: false, humanTurn: true, MAX_HP: 3,
+
+  init() {
+    this.grid = Array(9).fill(null);
+    this.gameOver = false;
+    this.humanTurn = true;
+    statusEl.textContent = 'Your move (place X to attack!)';
+    this.render();
+  },
+
+  neighbors(i) {
+    const r = Math.floor(i/3), c = i%3;
+    const n = [];
+    if (r > 0) n.push(i-3);
+    if (r < 2) n.push(i+3);
+    if (c > 0) n.push(i-1);
+    if (c < 2) n.push(i+1);
+    if (r > 0 && c > 0) n.push(i-4);
+    if (r > 0 && c < 2) n.push(i-2);
+    if (r < 2 && c > 0) n.push(i+2);
+    if (r < 2 && c < 2) n.push(i+4);
+    return n;
+  },
+
+  placeToken(i, token) {
+    this.grid[i] = { token, hp: this.MAX_HP };
+    const killed = [];
+    // damage adjacent enemies
+    for (const ni of this.neighbors(i)) {
+      const t = this.grid[ni];
+      if (t && t.token !== token) {
+        t.hp -= 1;
+        if (t.hp <= 0) {
+          killed.push(ni);
+        }
+      }
+    }
+    return killed;
+  },
+
+  removeKilled(killed) {
+    for (const i of killed) this.grid[i] = null;
+  },
+
+  checkWin(token) {
+    return LINES.some(([a,b,c]) =>
+      this.grid[a] && this.grid[a].token === token &&
+      this.grid[b] && this.grid[b].token === token &&
+      this.grid[c] && this.grid[c].token === token
+    );
+  },
+
+  getWinCells(token) {
+    const s = new Set();
+    for (const [a,b,c] of LINES) {
+      if (this.grid[a] && this.grid[a].token === token &&
+          this.grid[b] && this.grid[b].token === token &&
+          this.grid[c] && this.grid[c].token === token) {
+        s.add(a); s.add(b); s.add(c);
+      }
+    }
+    return s;
+  },
+
+  isFull() {
+    return this.grid.every(c => c !== null);
+  },
+
+  render(shakeSet, deathSet) {
+    gameArea.innerHTML = '';
+    const board = document.createElement('div');
+    board.className = 'board-3x3';
+    const wcX = this.getWinCells('X');
+    const wcO = this.getWinCells('O');
+    const wc = new Set([...wcX, ...wcO]);
+
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const t = this.grid[i];
+
+      if (t) {
+        cell.textContent = t.token;
+        cell.classList.add(t.token.toLowerCase(), 'taken');
+
+        // HP bar
+        const hpBar = document.createElement('div');
+        hpBar.className = 'hp-bar';
+        const hpFill = document.createElement('div');
+        hpFill.className = 'hp-fill hp-' + t.token.toLowerCase();
+        hpFill.style.width = (t.hp / this.MAX_HP * 100) + '%';
+        hpBar.appendChild(hpFill);
+        cell.appendChild(hpBar);
+
+        const hpText = document.createElement('div');
+        hpText.className = 'hp-text';
+        hpText.textContent = t.hp + '/' + this.MAX_HP;
+        cell.appendChild(hpText);
+      }
+
+      if (wc.has(i)) cell.classList.add('win');
+      if (shakeSet && shakeSet.has(i)) cell.classList.add('damage-shake');
+      if (deathSet && deathSet.has(i)) cell.classList.add('death-anim');
+
+      cell.addEventListener('click', () => this.click(i));
+      board.appendChild(cell);
+    }
+    gameArea.appendChild(board);
+  },
+
+  click(i) {
+    if (this.gameOver || !this.humanTurn || this.grid[i]) return;
+    const killed = this.placeToken(i, 'X');
+
+    // show damage
+    const shakeSet = new Set();
+    for (const ni of this.neighbors(i)) {
+      if (this.grid[ni] && this.grid[ni].token !== 'X') shakeSet.add(ni);
+    }
+    const deathSet = new Set(killed);
+    this.render(shakeSet, deathSet);
+
+    setTimeout(() => {
+      this.removeKilled(killed);
+      this.render();
+
+      if (this.checkWin('X')) {
+        statusEl.textContent = 'You win the battle!';
+        this.gameOver = true; scores.X++; updateScores(); this.render(); return;
+      }
+      if (this.isFull() && !this.checkWin('X') && !this.checkWin('O')) {
+        statusEl.textContent = 'Battlefield stalemate!';
+        this.gameOver = true; return;
+      }
+
+      this.humanTurn = false;
+      statusEl.textContent = 'AI attacking...';
+      setTimeout(() => this.ai(), 350);
+    }, 400);
+  },
+
+  ai() {
+    const empty = this.grid.map((v,i) => v===null ? i : -1).filter(i => i>=0);
+    if (empty.length === 0) {
+      statusEl.textContent = 'Battlefield stalemate!';
+      this.gameOver = true; return;
+    }
+
+    // heuristic: maximize damage + progress toward win
+    let bestScore = -Infinity, bestMove = empty[0];
+    for (const i of empty) {
+      let score = 0;
+      // count enemy neighbors (damage)
+      for (const ni of this.neighbors(i)) {
+        const t = this.grid[ni];
+        if (t && t.token === 'X') {
+          score += 2;
+          if (t.hp <= 1) score += 5; // will kill
+        }
+      }
+      // check if placing here helps form lines
+      const orig = this.grid[i];
+      this.grid[i] = {token:'O', hp: this.MAX_HP};
+      for (const [a,b,c] of LINES) {
+        const line = [this.grid[a], this.grid[b], this.grid[c]];
+        const oCount = line.filter(t => t && t.token === 'O').length;
+        const empty2 = line.filter(t => !t).length;
+        if (oCount === 2 && empty2 === 1) score += 15; // almost winning
+        if (oCount === 3) score += 50; // wins
+      }
+      // block opponent
+      this.grid[i] = {token:'X', hp: this.MAX_HP};
+      for (const [a,b,c] of LINES) {
+        const line = [this.grid[a], this.grid[b], this.grid[c]];
+        const xCount = line.filter(t => t && t.token === 'X').length;
+        if (xCount === 3) score += 20;
+      }
+      this.grid[i] = orig;
+      // center bonus
+      if (i === 4) score += 3;
+      score += Math.random() * 2;
+      if (score > bestScore) { bestScore = score; bestMove = i; }
+    }
+
+    const killed = this.placeToken(bestMove, 'O');
+    const shakeSet = new Set();
+    for (const ni of this.neighbors(bestMove)) {
+      if (this.grid[ni] && this.grid[ni].token !== 'O') shakeSet.add(ni);
+    }
+    const deathSet = new Set(killed);
+    this.render(shakeSet, deathSet);
+
+    setTimeout(() => {
+      this.removeKilled(killed);
+      this.render();
+
+      if (this.checkWin('O')) {
+        statusEl.textContent = 'AI wins the battle!';
+        this.gameOver = true; scores.O++; updateScores(); this.render(); return;
+      }
+      if (this.isFull()) {
+        statusEl.textContent = 'Battlefield stalemate!';
+        this.gameOver = true; return;
+      }
+      this.humanTurn = true;
+      statusEl.textContent = 'Your move (place X to attack!)';
+    }, 400);
+  }
+};
+
+// ============================================================
+//  3D CUBE MODE
+// ============================================================
+modes.cube = {
+  grid: null, // 27 cells [layer][row][col] flattened: layer*9 + row*3 + col
+  gameOver: false,
+  humanTurn: true,
+  rotX: -25, rotY: 35,
+  dragging: false, lastMX: 0, lastMY: 0,
+
+  // All 49 winning lines in 3x3x3
+  LINES_3D: null,
+
+  buildLines() {
+    const lines = [];
+    // Within each layer (9 lines x 3 layers = 27)
+    for (let l = 0; l < 3; l++) {
+      const o = l * 9;
+      // rows
+      for (let r = 0; r < 3; r++) lines.push([o+r*3, o+r*3+1, o+r*3+2]);
+      // cols
+      for (let c = 0; c < 3; c++) lines.push([o+c, o+3+c, o+6+c]);
+      // diags
+      lines.push([o, o+4, o+8]);
+      lines.push([o+2, o+4, o+6]);
+    }
+    // Columns through layers (9)
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        lines.push([r*3+c, 9+r*3+c, 18+r*3+c]);
+      }
+    }
+    // Diagonals through layers in each row-direction (6)
+    for (let r = 0; r < 3; r++) {
+      lines.push([r*3, 9+r*3+1, 18+r*3+2]);
+      lines.push([r*3+2, 9+r*3+1, 18+r*3]);
+    }
+    // Diagonals through layers in each col-direction (6)
+    for (let c = 0; c < 3; c++) {
+      lines.push([c, 9+3+c, 18+6+c]);
+      lines.push([6+c, 9+3+c, 18+c]);
+    }
+    // Space diagonals (4)
+    lines.push([0, 13, 26]);
+    lines.push([2, 13, 24]);
+    lines.push([6, 13, 20]);
+    lines.push([8, 13, 18]);
+
+    this.LINES_3D = lines;
+  },
+
+  init() {
+    if (!this.LINES_3D) this.buildLines();
+    this.grid = Array(27).fill('');
+    this.gameOver = false;
+    this.humanTurn = true;
+    this.rotX = -25;
+    this.rotY = 35;
+    statusEl.textContent = 'Your move (click a cell in the cube)';
+    this.render();
+  },
+
+  check3DWinner(token) {
+    return this.LINES_3D.some(([a,b,c]) => this.grid[a]===token && this.grid[b]===token && this.grid[c]===token);
+  },
+
+  getWinCells3D() {
+    const s = new Set();
+    for (const [a,b,c] of this.LINES_3D) {
+      if (this.grid[a] && this.grid[a]===this.grid[b] && this.grid[b]===this.grid[c]) {
+        s.add(a); s.add(b); s.add(c);
+      }
+    }
+    return s;
+  },
+
+  render() {
+    gameArea.innerHTML = '';
+    const container = document.createElement('div');
+    container.id = 'cube-container';
+
+    const scene = document.createElement('div');
+    scene.id = 'cube-scene';
+    scene.style.transform = `rotateX(${this.rotX}deg) rotateY(${this.rotY}deg)`;
+
+    const wc = this.getWinCells3D();
+
+    const layerNames = ['Bottom', 'Middle', 'Top'];
+    for (let l = 0; l < 3; l++) {
+      const layer = document.createElement('div');
+      layer.className = 'cube-layer';
+      // position layers in 3D space
+      const yOffset = (1 - l) * 120;
+      layer.style.transform = `translateY(${yOffset}px) translateX(95px) translateZ(0px)`;
+
+      const label = document.createElement('div');
+      label.className = 'layer-label';
+      label.textContent = layerNames[l] + ' (L' + (l+1) + ')';
+      layer.appendChild(label);
+
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          const idx = l * 9 + r * 3 + c;
+          const cell = document.createElement('div');
+          cell.className = 'cube-cell';
+          if (this.grid[idx]) {
+            cell.textContent = this.grid[idx];
+            cell.classList.add(this.grid[idx].toLowerCase(), 'taken');
+          }
+          if (wc.has(idx)) cell.classList.add('win');
+          cell.addEventListener('click', (e) => { e.stopPropagation(); this.click(idx); });
+          layer.appendChild(cell);
+        }
+      }
+      scene.appendChild(layer);
+    }
+
+    container.appendChild(scene);
+    gameArea.appendChild(container);
+
+    // drag to rotate
+    container.addEventListener('mousedown', (e) => {
+      this.dragging = true; this.lastMX = e.clientX; this.lastMY = e.clientY;
+    });
+    window.addEventListener('mousemove', this._onMouseMove = (e) => {
+      if (!this.dragging) return;
+      const dx = e.clientX - this.lastMX;
+      const dy = e.clientY - this.lastMY;
+      this.rotY += dx * 0.5;
+      this.rotX -= dy * 0.5;
+      this.lastMX = e.clientX;
+      this.lastMY = e.clientY;
+      const sc = document.getElementById('cube-scene');
+      if (sc) sc.style.transform = `rotateX(${this.rotX}deg) rotateY(${this.rotY}deg)`;
+    });
+    window.addEventListener('mouseup', this._onMouseUp = () => { this.dragging = false; });
+  },
+
+  click(idx) {
+    if (this.gameOver || !this.humanTurn || this.grid[idx]) return;
+    this.grid[idx] = 'X';
+    this.humanTurn = false;
+    this.render();
+
+    if (this.check3DWinner('X')) {
+      statusEl.textContent = 'You win in 3D!';
+      this.gameOver = true; scores.X++; updateScores(); this.render(); return;
+    }
+    if (this.grid.every(c=>c!=='')) {
+      statusEl.textContent = 'Draw in the cube!';
+      this.gameOver = true; return;
+    }
+    statusEl.textContent = 'AI thinking...';
+    setTimeout(() => this.ai(), 300);
+  },
+
+  ai() {
+    // Heuristic AI for 3D
+    const empty = this.grid.map((v,i) => v==='' ? i : -1).filter(i=>i>=0);
+    let bestScore = -Infinity, bestMove = empty[0];
+
+    for (const i of empty) {
+      let score = 0;
+
+      // Can we win?
+      this.grid[i] = 'O';
+      if (this.check3DWinner('O')) score += 1000;
+      this.grid[i] = '';
+
+      // Can opponent win?
+      this.grid[i] = 'X';
+      if (this.check3DWinner('X')) score += 500;
+      this.grid[i] = '';
+
+      // Evaluate lines through this cell
+      for (const line of this.LINES_3D) {
+        if (!line.includes(i)) continue;
+        const vals = line.map(j => this.grid[j]);
+        const oCount = vals.filter(v => v==='O').length;
+        const xCount = vals.filter(v => v==='X').length;
+        const eCount = vals.filter(v => v==='').length;
+        if (xCount === 0) score += oCount * 3;
+        if (oCount === 0) score += xCount * 1; // blocking value
+      }
+
+      // center of cube bonus
+      if (i === 13) score += 20;
+      // face centers
+      if ([4, 10, 12, 14, 16, 22].includes(i)) score += 5;
+
+      score += Math.random() * 2;
+      if (score > bestScore) { bestScore = score; bestMove = i; }
+    }
+
+    this.grid[bestMove] = 'O';
+    this.render();
+
+    if (this.check3DWinner('O')) {
+      statusEl.textContent = 'AI wins in 3D!';
+      this.gameOver = true; scores.O++; updateScores(); this.render(); return;
+    }
+    if (this.grid.every(c=>c!=='')) {
+      statusEl.textContent = 'Draw in the cube!';
+      this.gameOver = true; return;
+    }
+    this.humanTurn = true;
+    statusEl.textContent = 'Your move (click a cell in the cube)';
+  }
+};
+
+// ============================================================
+//  BOOT
+// ============================================================
+startMode();
+</script>
+</body>
+</html>
