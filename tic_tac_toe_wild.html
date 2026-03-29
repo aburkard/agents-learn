@@ -235,38 +235,60 @@
 
   /* ==== DRUNK MODE ==== */
   @keyframes wobble {
-    0%   { transform: rotate(0deg) translateX(0); }
-    25%  { transform: rotate(1.5deg) translateX(3px); }
-    50%  { transform: rotate(-1deg) translateY(2px); }
-    75%  { transform: rotate(1deg) translateX(-2px); }
-    100% { transform: rotate(0deg) translateX(0); }
+    0%   { transform: rotate(0deg) translateX(0) translateY(0); }
+    15%  { transform: rotate(4deg) translateX(8px) translateY(-4px); }
+    30%  { transform: rotate(-3deg) translateX(-6px) translateY(3px); }
+    45%  { transform: rotate(5deg) translateX(5px) translateY(5px); }
+    60%  { transform: rotate(-2.5deg) translateX(-8px) translateY(-3px); }
+    75%  { transform: rotate(3.5deg) translateX(6px) translateY(2px); }
+    90%  { transform: rotate(-4deg) translateX(-4px) translateY(4px); }
+    100% { transform: rotate(0deg) translateX(0) translateY(0); }
   }
   @keyframes cell-drift {
     0%   { transform: translate(0, 0) rotate(0deg); }
-    33%  { transform: translate(4px, -3px) rotate(2deg); }
-    66%  { transform: translate(-3px, 2px) rotate(-1.5deg); }
+    20%  { transform: translate(7px, -6px) rotate(5deg); }
+    40%  { transform: translate(-6px, 5px) rotate(-4deg); }
+    60%  { transform: translate(8px, 4px) rotate(3deg); }
+    80%  { transform: translate(-5px, -7px) rotate(-5deg); }
     100% { transform: translate(0, 0) rotate(0deg); }
   }
   @keyframes hiccup {
-    0%, 90%, 100% { transform: scale(1); }
-    95% { transform: scale(1.08) rotate(3deg); }
+    0%, 80%, 100% { transform: scale(1) rotate(0deg); }
+    85% { transform: scale(1.18) rotate(-6deg) translateX(-5px); }
+    92% { transform: scale(0.94) rotate(5deg) translateX(4px); }
+    96% { transform: scale(1.12) rotate(-3deg); }
+  }
+  @keyframes drunk-spin {
+    0%   { transform: rotate(0deg) scale(1); }
+    50%  { transform: rotate(180deg) scale(1.05); }
+    100% { transform: rotate(360deg) scale(1); }
   }
   .drunk-board {
-    animation: wobble 3s ease-in-out infinite;
+    animation: wobble 1.8s ease-in-out infinite;
+    filter: blur(0.4px);
   }
   .drunk-board .cell {
-    animation: cell-drift 4s ease-in-out infinite;
+    animation: cell-drift 2.2s ease-in-out infinite;
     animation-delay: var(--drift-delay, 0s);
   }
   .drunk-hiccup {
-    animation: hiccup 2s ease-in-out;
+    animation: hiccup 0.8s ease-in-out;
   }
   .drunk-flash {
-    animation: drunk-flash-anim 0.4s ease-out;
+    animation: drunk-flash-anim 0.5s ease-out;
   }
   @keyframes drunk-flash-anim {
-    0% { background: #2a1a1a; }
-    100% { background: #151515; }
+    0%   { background: #3a1a1a; color: #fff; transform: scale(1.15) rotate(8deg); }
+    40%  { background: #1a2a1a; transform: scale(0.95) rotate(-5deg); }
+    100% { background: #151515; transform: scale(1) rotate(0deg); }
+  }
+  @keyframes drunk-sway {
+    0%, 100% { letter-spacing: normal; transform: skewX(0deg); }
+    25% { letter-spacing: 2px; transform: skewX(-3deg); }
+    75% { letter-spacing: -1px; transform: skewX(2deg); }
+  }
+  #status.drunk-status {
+    animation: drunk-sway 2s ease-in-out infinite;
   }
   .typo-text {
     transition: opacity 0.2s;
@@ -772,29 +794,45 @@ modes.drunk = {
     this.grid = Array(9).fill('');
     this.gameOver = false;
     this.humanTurn = true;
-    statusEl.textContent = 'Yoour moev';
+    statusEl.className = 'drunk-status';
+    statusEl.textContent = 'Yoouur mooevv!!';
     clearTimeout(this.typoTimeout);
-    this.typoTimeout = setTimeout(() => { statusEl.textContent = 'Your move'; }, 800);
+    this.typoTimeout = setTimeout(() => { statusEl.textContent = 'Your move'; }, 1800);
     this.render();
   },
 
   setDrunkStatus(correct) {
-    // Make a typo version then correct it
+    // Make a typo version then maybe correct it (sometimes stays wrong!)
     const typo = this.makeTypo(correct);
+    statusEl.className = 'drunk-status';
     statusEl.textContent = typo;
     clearTimeout(this.typoTimeout);
-    this.typoTimeout = setTimeout(() => { statusEl.textContent = correct; }, 700 + Math.random() * 600);
+    const delay = 1200 + Math.random() * 1800;
+    // 25% chance it never corrects itself
+    if (Math.random() > 0.25) {
+      this.typoTimeout = setTimeout(() => {
+        // Correct it, but maybe add a NEW typo immediately after
+        statusEl.textContent = correct;
+        if (Math.random() < 0.4) {
+          setTimeout(() => { statusEl.textContent = this.makeTypo(correct); }, 300);
+        }
+      }, delay);
+    }
   },
 
   makeTypo(text) {
     const arr = text.split('');
-    const swaps = 1 + Math.floor(Math.random() * 2);
+    const swaps = 2 + Math.floor(Math.random() * 4);
     for (let s = 0; s < swaps; s++) {
       const i = Math.floor(Math.random() * (arr.length - 1));
       if (arr[i] !== ' ' && arr[i+1] !== ' ') {
         [arr[i], arr[i+1]] = [arr[i+1], arr[i]];
       }
     }
+    // Also randomly duplicate or drop a letter
+    const ri = Math.floor(Math.random() * arr.length);
+    if (Math.random() < 0.5) arr.splice(ri, 0, arr[ri]); // duplicate
+    else if (arr.length > 3) arr.splice(ri, 1);           // drop
     return arr.join('');
   },
 
@@ -823,26 +861,34 @@ modes.drunk = {
     }
     gameArea.appendChild(board);
 
-    // occasionally flash a ghost token in a random empty cell
+    // frequently flash ghost tokens in random empty cells
     if (!this.gameOver) {
-      setTimeout(() => {
-        const cells = board.querySelectorAll('.cell');
-        const empties = [];
-        for (let i = 0; i < 9; i++) if (!this.grid[i]) empties.push(i);
-        if (empties.length > 0) {
-          const ri = empties[Math.floor(Math.random() * empties.length)];
-          const ghostCell = cells[ri];
-          if (ghostCell) {
-            const ghost = Math.random() > 0.5 ? 'X' : 'O';
-            ghostCell.textContent = ghost;
-            ghostCell.style.opacity = '0.3';
-            ghostCell.classList.add('drunk-flash');
-            setTimeout(() => {
-              if (!this.grid[ri]) { ghostCell.textContent = ''; ghostCell.style.opacity = '1'; }
-            }, 350);
+      const flashCount = 1 + Math.floor(Math.random() * 3);
+      for (let f = 0; f < flashCount; f++) {
+        setTimeout(() => {
+          const cells = board.querySelectorAll('.cell');
+          const empties = [];
+          for (let i = 0; i < 9; i++) if (!this.grid[i]) empties.push(i);
+          if (empties.length > 0) {
+            const ri = empties[Math.floor(Math.random() * empties.length)];
+            const ghostCell = cells[ri];
+            if (ghostCell) {
+              const ghost = Math.random() > 0.5 ? 'X' : 'O';
+              ghostCell.textContent = ghost;
+              ghostCell.style.opacity = '0.6';
+              ghostCell.style.color = Math.random() > 0.5 ? '#7eb8da' : '#da7e7e';
+              ghostCell.classList.add('drunk-flash');
+              setTimeout(() => {
+                if (!this.grid[ri]) {
+                  ghostCell.textContent = '';
+                  ghostCell.style.opacity = '1';
+                  ghostCell.style.color = '';
+                }
+              }, 400 + Math.random() * 300);
+            }
           }
-        }
-      }, 800 + Math.random() * 1500);
+        }, 200 + Math.random() * 900 + f * 400);
+      }
     }
   },
 
@@ -855,16 +901,16 @@ modes.drunk = {
     const board = gameArea.querySelector('.board-3x3');
     if (board) { board.classList.add('drunk-hiccup'); setTimeout(() => board.classList.remove('drunk-hiccup'), 2000); }
 
-    if (check3x3(this.grid, 'X')) { this.setDrunkStatus('You win! ...wait, really?'); this.gameOver = true; scores.X++; updateScores(); this.render(); return; }
-    if (this.grid.every(c=>c!=='')) { this.setDrunkStatus("It's a draw... I think"); this.gameOver = true; return; }
-    this.setDrunkStatus('AI thinkning...');
-    setTimeout(() => this.ai(), 400 + Math.random() * 400);
+    if (check3x3(this.grid, 'X')) { this.setDrunkStatus('You wiin! ...waait, rreally??'); this.gameOver = true; scores.X++; updateScores(); this.render(); return; }
+    if (this.grid.every(c=>c!=='')) { this.setDrunkStatus("Its a drraw... I... thinkkk"); this.gameOver = true; return; }
+    this.setDrunkStatus('AI thinnnking......');
+    setTimeout(() => this.ai(), 600 + Math.random() * 800);
   },
 
   ai() {
-    // Drunk AI: 30% chance of random move
+    // Very drunk AI: 65% chance of random move, sometimes "forgets" and moves again
     let mv;
-    if (Math.random() < 0.3) {
+    if (Math.random() < 0.65) {
       const empty = this.grid.map((v,i) => v==='' ? i : -1).filter(i => i>=0);
       mv = empty[Math.floor(Math.random() * empty.length)];
     } else {
@@ -872,10 +918,13 @@ modes.drunk = {
     }
     this.grid[mv] = 'O';
     this.render();
-    if (check3x3(this.grid, 'O')) { this.setDrunkStatus('AI wins! *hic*'); this.gameOver = true; scores.O++; updateScores(); this.render(); return; }
-    if (this.grid.every(c=>c!=='')) { this.setDrunkStatus("Draw... prboably"); this.gameOver = true; return; }
+    // Hiccup on AI move too
+    const board = gameArea.querySelector('.board-3x3');
+    if (board) { board.classList.add('drunk-hiccup'); setTimeout(() => board.classList.remove('drunk-hiccup'), 1000); }
+    if (check3x3(this.grid, 'O')) { this.setDrunkStatus('AI winss!! *hiiic*'); this.gameOver = true; scores.O++; updateScores(); this.render(); return; }
+    if (this.grid.every(c=>c!=='')) { this.setDrunkStatus("Drraw... probbably idk"); this.gameOver = true; return; }
     this.humanTurn = true;
-    this.setDrunkStatus('Yuor moev');
+    this.setDrunkStatus('Yuur... moooev. I thnk.');
   }
 };
 
