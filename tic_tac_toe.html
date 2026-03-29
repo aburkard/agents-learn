@@ -1677,7 +1677,7 @@ modes.drunk = {
             ghostCell.textContent = Math.random() > 0.5 ? 'X' : 'O';
             ghostCell.style.opacity = '0.3';
             ghostCell.classList.add('drunk-flash');
-            setTimeout(() => { if (!this.grid[ri]) { ghostCell.textContent = ''; ghostCell.style.opacity = '1'; } }, 350);
+            setTimeout(() => { if (!this.grid[ri]) { ghostCell.textContent = ''; ghostCell.style.opacity = '1'; ghostCell.classList.remove('drunk-flash'); } }, 350);
           }
         }
       }, 800 + Math.random() * 1500);

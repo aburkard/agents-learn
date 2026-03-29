@@ -842,11 +842,9 @@ modes.drunk = {
     board.className = 'board-3x3 drunk-board';
     const wc = getWinCells3x3(this.grid);
 
-    // shuffle visual positions but track real indices
-    const displayOrder = [0,1,2,3,4,5,6,7,8];
     // cells occasionally show ghost tokens
     for (let di = 0; di < 9; di++) {
-      const i = displayOrder[di];
+      const i = di;
       const cell = document.createElement('div');
       cell.className = 'cell';
       cell.style.setProperty('--drift-delay', (i * 0.4 + Math.random() * 0.5) + 's');
@@ -883,6 +881,7 @@ modes.drunk = {
                   ghostCell.textContent = '';
                   ghostCell.style.opacity = '1';
                   ghostCell.style.color = '';
+                  ghostCell.classList.remove('drunk-flash');
                 }
               }, 400 + Math.random() * 300);
             }
